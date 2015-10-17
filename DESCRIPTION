@@ -1,0 +1,24 @@
+Package: riso
+Title: Discovery of Cis-regulatory Isoforms 
+Version: 0.0.0.9000
+Authors@R: person("Weixiang", "Fang", email = "wfang9@jhmi.edu", role = c("aut", "cre"))
+Description: Fit hierachical mixture model to summarize isoforms of cis-regulation.
+Depends: R (>= 3.2.0)
+License: What license is it under?
+LazyData: false 
+Imports:
+    GenomicRanges,
+    GenomicAlignments,
+    rtracklayer,
+    ggplot2,
+    dplyr,
+    reshape2,
+    RColorBrewer,
+    Rcpp,
+    RcppArmadillo,
+    gtools,
+    matrixStats,
+    DESeq,
+    monocle,
+    igraph,
+    inline
