@@ -137,7 +137,7 @@ countReads <- function(align, chrlen.file, bin.width, counts = NULL){
     if (is.null(counts)) counts <- numeric(bin.from[24])
     mid <- ceiling((start(align) + end(align)) / 2)
     bin.gw <- chr2gw(seqnames(align), bp2bin(mid, bin.width))
-    count.bins(counts, bin.gw)
+    count_bins(counts, bin.gw)
 }
 
 mix.align <- function(align1, align2, prop, chrlen.file, bin.width){
@@ -156,16 +156,24 @@ mix.align <- function(align1, align2, prop, chrlen.file, bin.width){
 
     counts1 <- numeric(bin.from[24])
     counts2 <- numeric(bin.from[24])
-    counts1 <- count.bins(counts1, bin.gw1[-xchange1])
-    counts1 <- count.bins(counts1, bin.gw2[xchange2])
-    counts2 <- count.bins(counts2, bin.gw2[-xchange2])
-    counts2 <- count.bins(counts2, bin.gw1[xchange1])
+    counts1 <- count_bins(counts1, bin.gw1[-xchange1])
+    counts1 <- count_bins(counts1, bin.gw2[xchange2])
+    counts2 <- count_bins(counts2, bin.gw2[-xchange2])
+    counts2 <- count_bins(counts2, bin.gw1[xchange1])
 
     return(list(counts1, counts2))
 }
 
 bam2bin <- function(bam.file, chrlen.file, bin.width){
     alignment <- readGAlignments(bam.file)
+    countReads(alignment, chrlen.file, bin.width)
+}
+
+ta2bin <- function(ta.file, chrlen.file, bin.width){
+    if (file_ext(ta.file) == "gz"){
+        ta.file <- gunzip(ta.file, temporary = T, remove = F)
+    }
+    alignment <- import.bed(ta.file)
     countReads(alignment, chrlen.file, bin.width)
 }
 
