@@ -32,7 +32,7 @@ import.narrowPeak <- function(f){
     import.bed(f, extraCols = extraCols.narrowPeak)
 }
 
-chr2num <- function(c){ 
+chr2num <- function(c){
     # earlier version need to merge with seq2num
     # does not handle Y M yet
     what <- gsub("chr", "", as.character(c))
@@ -46,7 +46,7 @@ chr2num <- function(c){
 seq2num <- function(seq){
     # chrX mapped to 23
     # chrM and chrY mapped to NA
-    l <- levels(seq) 
+    l <- levels(seq)
     l <- gsub("chr", "", l)
     l[l == "X"] <- "23"
     l[l == "Y" | l == "M"] <- NA
@@ -140,13 +140,6 @@ countReads <- function(align, chrlen.file, bin.width, counts = NULL){
     count.bins(counts, bin.gw)
 }
 
-count.bins <- cxxfunction(sig = signature(counts = "numeric", bins = "numeric"),
-                     'Rcpp::NumericVector b(bins);
-                     Rcpp::NumericVector c(counts);
-                     int i;
-                     for (i=0; i<b.size(); i++){ c[b[i] - 1]++; }
-                     return Rcpp::wrap(c);', plugin = "Rcpp")
-
 mix.align <- function(align1, align2, prop, chrlen.file, bin.width){
     # extract prop from each file and exchange
     # prop >= 0 <= 0.5
@@ -160,7 +153,7 @@ mix.align <- function(align1, align2, prop, chrlen.file, bin.width){
 
     xchange1 <- sample(1:length(align1), ceiling(length(align1) * prop), replace = F)
     xchange2 <- sample(1:length(align2), ceiling(length(align2) * prop), replace = F)
-    
+
     counts1 <- numeric(bin.from[24])
     counts2 <- numeric(bin.from[24])
     counts1 <- count.bins(counts1, bin.gw1[-xchange1])
@@ -181,7 +174,7 @@ empirical.pvalue <- function(null.vec, obs.vec, alternative = c("less", "greater
     # calculate a vector of p-values
     # allows two sided p-values
     # how to handle NAs in null?
-    
+
     n <- length(obs.vec)
 	pvalue.vec <- numeric(n)
     alternative = match.arg(alternative)
@@ -190,7 +183,7 @@ empirical.pvalue <- function(null.vec, obs.vec, alternative = c("less", "greater
         if(is.na(obs.vec[i])){
             pvalue.vec[i] <- NA
         } else {
-            pvalue.vec[i] <- 
+            pvalue.vec[i] <-
                 switch(alternative,
                        "less" = {
                            (sum(null.vec <= obs.vec[i], na.rm=T) + 1) /
@@ -233,18 +226,18 @@ image.na <- function(z,  zlim, col = brewer.pal(9,"Blues"), na.color = grey.colo
                      rowsep = NULL, colsep = NULL, sepcolor = grey.colors(1, 0.95), sepwidth = 0.02,
                      cellnote = F, digit.format = "%0.2f", text.col = "black", ...){
 
-    zstep <- (zlim[2] - zlim[1]) / length(col) 
-    newz.below.outside <- zlim[1] - 2 * zstep 
-    newz.above.outside <- zlim[2] + zstep 
-    newz.na <- zlim[2] + 2 * zstep 
+    zstep <- (zlim[2] - zlim[1]) / length(col)
+    newz.below.outside <- zlim[1] - 2 * zstep
+    newz.above.outside <- zlim[2] + zstep
+    newz.na <- zlim[2] + 2 * zstep
 
-    z[which(z < zlim[1])] <- newz.below.outside 
-    z[which(z > zlim[2])] <- newz.above.outside 
-    z[which(is.na(z > zlim[2]))] <- newz.na 
+    z[which(z < zlim[1])] <- newz.below.outside
+    z[which(z > zlim[2])] <- newz.above.outside
+    z[which(is.na(z > zlim[2]))] <- newz.na
 
-    zlim[1] <- zlim[1] - 2 * zstep 
-    zlim[2] <- zlim[2] + 2 * zstep 
-    col <- c(outside.below.color, col[1], col, outside.above.color, na.color) 
+    zlim[1] <- zlim[1] - 2 * zstep
+    zlim[2] <- zlim[2] + 2 * zstep
+    col <- c(outside.below.color, col[1], col, outside.above.color, na.color)
 
     image(x = 1:nrow(z), y = 1:ncol(z), z = z, zlim=zlim, col=col, xlab = "", ylab = "", ...)
     if (cellnote == T){

@@ -1,5 +1,8 @@
 #include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppArmadillo)]]
+
 using namespace Rcpp;
+
 
 // [[Rcpp::export]]
 List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, int K, int max_iter, double tol,
@@ -14,7 +17,7 @@ List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, i
     // Set initial values for theta and sigma
     // for (int j =0; j < J; j++ ){
     //     theta1[j] = mean(na_omit(mat( _ , j ))) + 2 * bg_sd( _ , j);
-    //     sigma1[j] = sd(na_omit(mat(_, j ))); 
+    //     sigma1[j] = sd(na_omit(mat(_, j )));
     // }
 
     NumericVector mu1 = clone(theta1);
@@ -34,7 +37,7 @@ List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, i
     double loglike = -1e10;
     double loglike_new;
     bool converge_flag = FALSE;
-    double temp_max, m, s, d1, d2; 
+    double temp_max, m, s, d1, d2;
 
     NumericMatrix like1(I, J);
     NumericMatrix like0(I, J);
@@ -43,10 +46,10 @@ List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, i
     NumericMatrix clust_like(I, K);
     NumericVector temp(K);
     NumericVector all_like(I);
-    arma::cube cond_like(I, J, K); 
+    arma::cube cond_like(I, J, K);
     NumericVector p_new(K);
     NumericMatrix q_new(K, J);
-    NumericMatrix post1(I, J); 
+    NumericMatrix post1(I, J);
 
     // Setting like0 which is not being updated
     for (int i=0; i < I; i++){
@@ -71,7 +74,7 @@ List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, i
                 }
             }
         }
-      
+
         // compute unnormalized clust_like on log scale
         for (int k = 0; k < K; k++){
             for (int i = 0; i < I; i++){
@@ -81,7 +84,7 @@ List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, i
                         s += log(temp_like_sum(i, j, k));
                     }
                 }
-                clust_like(i, k) = log(p[k]) + s; 
+                clust_like(i, k) = log(p[k]) + s;
             }
         }
 
@@ -94,11 +97,11 @@ List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, i
             clust_like(i, _) = temp / sum(temp);
             all_like[i] = log(sum(temp)) + temp_max;
         }
-        
+
         loglike_new = sum(all_like);
         // Rcout << (loglike_new - loglike) << std::endl;
         loglike = loglike_new;
-        
+
         // compute cond_like
         for (int i = 0; i < I; i++){
             for (int j = 0; j < J; j++){
@@ -118,7 +121,7 @@ List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, i
                 s = 0;
                 for (int i = 0; i<I; i++){
                     if (!R_IsNA(cond_like(i, j, k))){
-                        s += cond_like(i, j, k); 
+                        s += cond_like(i, j, k);
                     }
                 }
                 q_new(k, j) = (s + 1) / ( m + 2);
@@ -128,7 +131,7 @@ List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, i
         if ( max( abs(p_new - p) / p ) < tol & max( abs(q_new - q) / q) < tol ){
             converge_flag = TRUE;
         }
-        
+
         p = clone(p_new);
         q = clone(q_new);
 
@@ -137,7 +140,7 @@ List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, i
                 s = 0;
                 for (int k = 0; k < K; k++){
                     if (!R_IsNA(cond_like(i, j, k))){
-                        s += cond_like(i, j, k); 
+                        s += cond_like(i, j, k);
                     }
                 }
                 post1(i, j) = s;
@@ -158,9 +161,9 @@ List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, i
                 theta1_new[j] = max(bg_mean( _ , j)) + max(bg_sd( _ , j));
             }
         }
-        
+
         theta1 = clone(theta1_new);
-        
+
         for (int j = 0; j < J; j++){
             s = 0;
             m = 0;
@@ -240,3 +243,12 @@ NumericMatrix calLikeIso(NumericMatrix mat, NumericVector p, NumericMatrix q, Nu
 
     return loglike_mat;
 }
+
+// [[Rcpp::export]]
+NumericVector count_bins(NumericVector counts, NumericVector bins){
+  int i;
+  for (i=0; i<bins.size(); i++){ counts[bins[i] - 1]++; }
+  return counts;
+}
+
+

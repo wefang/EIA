@@ -1,6 +1,6 @@
 getSizeFactors <- function(epidt){
     if (epidt@has.control == FALSE){
-        files <- epidt@table$trt.file 
+        files <- epidt@table$trt.file
         total.counts <- numeric(length(files))
         for (i in 1:length(files)){
             message(paste("loading file", files[i]))
@@ -77,7 +77,7 @@ setupDomainModel <- function(isot, chrlen.file, bin.width, mod.dir,
                         start.bin = bp2bin(start(d), bin.width),
                         end.bin = bp2bin(end(d), bin.width),
                         data.types = data.types)
-        # find overlaped bins for each datatype 
+        # find overlaped bins for each datatype
         for (j in 1:length(data.types)){
             dtype <- data.types[j]
             cells <- as.character(unique(isot@epidt[[dtype]]@table$cell))
@@ -93,7 +93,7 @@ setupDomainModel <- function(isot, chrlen.file, bin.width, mod.dir,
 
 generateModelFile <- function(isot, id = 1:length(isot@domain)){
     if(!dir.exists(isot@mod.dir)) dir.create(isot@mod.dir)
-    chr.last <- "" 
+    chr.last <- ""
     raw.mat.bydt <- list()
     if (length(id) > 1) pb <- txtProgressBar(1, length(id), style = 3)
     for (j in 1:length(id)){
@@ -176,7 +176,7 @@ findIsoforms <- function(isom, k = 15){
     pilot.rep <- 100
     pilot.max.iter <- 30
     pilot.tol <- 0.01
-    
+
     pilot.loglike <- numeric()
     param.list <- list()
     message(paste("running", k, "components..."))
@@ -205,10 +205,10 @@ findIsoforms <- function(isom, k = 15){
         second.output[[rep]] <- temp
     }
     out <- second.output[[which.max(second.loglike)]]
-    
+
     isom@loglike <- out$loglike
     isom@labels <- apply(out$clust.like, 1, which.max)
-    isom@k <- length(unique(isom@labels)) 
+    isom@k <- length(unique(isom@labels))
     isom@p <- out$p
     isom@q <- out$q
     isom@theta1 <- out$theta1
@@ -280,19 +280,19 @@ calProb <- function(mat, p, q, bg.mean, bg.sd, theta1, sigma1){
     if(is.vector(bg.sd)) bg.sd <- matrix(bg.sd, 1)
 
     I <- dim(mat)[1]
-    J <- dim(mat)[2] 
+    J <- dim(mat)[2]
     K <- dim(q)[1]
 
     like1 <- like0 <- matrix(, I, J)
     temp.like.sum <- temp.like.ratio <- array(, c(I, J, K))
-    
+
     for (i in 1:I){
         for (j in 1:J){
             like0[i, j] <- dnorm(mat[i, j], bg.mean[i, j], bg.sd[i, j])
             like1[i, j] <- dnorm(mat[i, j], theta1[j], sigma1[j])
         }
     }
-    
+
     for (i in 1:I){
         for (k in 1:K){
             for (j in 1:J){
@@ -302,7 +302,7 @@ calProb <- function(mat, p, q, bg.mean, bg.sd, theta1, sigma1){
             }
         }
     }
-    
+
     clust.like <- matrix(, I, K)
     all.like <- numeric(I)
 
@@ -407,7 +407,7 @@ predictBinding <- function(isot, data.type, trt.file, peak.regions, chrlen.file,
         bg.sd <- rep(sd(val[start.bin.gw:end.bin.gw]), length(bins))
 
         prob.out <- calProb(domain.val, rep(1, nrow(q))/nrow(q), q, bg.mean, bg.sd, theta1, sigma1)
-        output[[domain.id]] <- 
+        output[[domain.id]] <-
             data.frame(chr = rep(dmod@chr, length(bins)), bins = bins, prob = prob.out$a.prob)
     }
     prob.df <- do.call(rbind, output)
@@ -420,7 +420,7 @@ predictBinding <- function(isot, data.type, trt.file, peak.regions, chrlen.file,
 
 calLikeIso2 <- function(mat, p, q, bg.mean, bg.sd, theta1, sigma1){
     I <- dim(mat)[1]
-    J <- dim(mat)[2] 
+    J <- dim(mat)[2]
     K <- dim(q)[1]
 
     like1 <- like0 <- matrix(, I, J)
@@ -507,7 +507,7 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2, peaks.co
     sigma1.global.cond12 <- sd(val.cond1[bins.peak.cond2])
     sigma1.global.cond21 <- sd(val.cond2[bins.peak.cond1])
 
-    result <- 
+    result <-
         bplapply(1:length(isot@domain), function(domain.id){
 
                      print(domain.id)
@@ -545,14 +545,14 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2, peaks.co
 
                      if (length(domain.bins.peak.cond1) >= 5){
                          theta1.est.cond1 <-
-                             mean(val.cond1[domain.bins.peak.cond1]) * (1 - mix.prop) + 
+                             mean(val.cond1[domain.bins.peak.cond1]) * (1 - mix.prop) +
                              mean(val.cond1[domain.bins.peak.cond2]) * mix.prop
                          sigma1.est.cond1 <-
-                             sd(val.cond1[domain.bins.peak.cond1]) * (1 - mix.prop) + 
+                             sd(val.cond1[domain.bins.peak.cond1]) * (1 - mix.prop) +
                              sd(val.cond1[domain.bins.peak.cond2]) * mix.prop
                      } else {
                          theta1.est.cond1 <-
-                             global.theta1.cond1 * (1 - mix.prop) + 
+                             global.theta1.cond1 * (1 - mix.prop) +
                              global.theta1.cond12 * mix.prop
                          sigma1.est.cond1 <-
                              global.sigma1.cond1 * (1 - mix.prop) +
@@ -561,14 +561,14 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2, peaks.co
                      # repeat for condition 2
                      if (length(domain.bins.peak.cond2) >= 5){
                          theta1.est.cond2 <-
-                             mean(val.cond2[domain.bins.peak.cond2]) * (1 - mix.prop) + 
+                             mean(val.cond2[domain.bins.peak.cond2]) * (1 - mix.prop) +
                              mean(val.cond2[domain.bins.peak.cond1]) * mix.prop
                          sigma1.est.cond2 <-
-                             sd(val.cond2[domain.bins.peak.cond2]) * (1 - mix.prop) + 
+                             sd(val.cond2[domain.bins.peak.cond2]) * (1 - mix.prop) +
                              sd(val.cond2[domain.bins.peak.cond1]) * mix.prop
                      } else {
                          theta1.est.cond2 <-
-                             global.theta1.cond2 * (1 - mix.prop) + 
+                             global.theta1.cond2 * (1 - mix.prop) +
                              global.theta1.cond21 * mix.prop
                          sigma1.est.cond2 <-
                              global.sigma1.cond2 * (1 - mix.prop) +
@@ -629,14 +629,14 @@ plotIsoformModel <- function(isom, zlim, main="", cell.names=""){
     q.mat <- mod@q[isoform.index, , drop=F]
     # reorder used isoforms with hclust result
     if (nrow(q.mat) >= 2){
-        q.ord <- hclust(dist(q.mat))$order  
+        q.ord <- hclust(dist(q.mat))$order
     } else {
-        q.ord <- 1 
+        q.ord <- 1
     }
     # reorder cell labels
     label.fac <- factor(isom@labels, levels = isoform.index[q.ord])
-    ord <- order(label.fac) 
-    # isoform indicator	
+    ord <- order(label.fac)
+    # isoform indicator
     isoform.dum <- as.numeric(sort(label.fac))
     # find separator of isoforms
     isoform.sep <- which(diff(rev(isoform.dum)) == -1)
@@ -656,14 +656,14 @@ plotIsoformModel <- function(isom, zlim, main="", cell.names=""){
     par(mar = c(1, 1, 1, 0.8))
     image.na(t(q.mat[q.ord, , drop=F]), col = brewer.pal(9, "Blues"),
              zlim = c(0, 1),rowsep = 1:(length(isoform.index) - 1), axes=FALSE)
-    
+
     # isoform indicator
     par(mar = c(0, 5, 2, 0))
-    image.na(t(isoform.dum), zlim = c(1, max(isoform.dum, na.rm = T)), 
+    image.na(t(isoform.dum), zlim = c(1, max(isoform.dum, na.rm = T)),
              col = brewer.pal(max(isoform.dum, na.rm = T) , "Pastel2"), rowsep = isoform.sep,
              axes = FALSE)
     mtext(text = cell.names[ord],
-          side=2, line=0.3, at = seq(1, length(cell.names), by = 1), las = 1, cex = 0.5) 
+          side=2, line=0.3, at = seq(1, length(cell.names), by = 1), las = 1, cex = 0.5)
 
     par(mar = c(1, 5, 1, 0))
     image.na(t(matrix(isom@p[isoform.index[q.ord]])), zlim = c(0, 1), col = brewer.pal(9, "PuRd"), cellnote = T, axes = F,
@@ -681,21 +681,21 @@ plotDomain <- function(isot, domain.id){
     rm(mod, envir = .GlobalEnv)
 }
 
-    plotComponents <- function(isot, domain.id = 1:length(isot@domain)){
+plotComponents <- function(isot, domain.id = 1:length(isot@domain)){
         comps <- unlist(lapply(isot@domain.list[domain.id], function(x) x@k))
         qplot(comps)
     }
 
-    plotReducedMatrix <- function(isot){
+plotReducedMatrix <- function(isot){
         m <- isot@monocle.mod@reduce.mat
         ord <- order(arrange(isot@monocle.mod@ordering, sample_name)$pseudo_time)
         par(mar = c(4, 6, 4, 2))
         image.na(t(m[ord, hclust(dist(t(m)))$order]), zlim = c(min(m) - 0.1, max(m) + 0.1), axes = F)
         mtext(text = isot@monocle.mod@ordering$sample_name,
-              side = 2, line = 0.3, at = seq(0, 1, length = nrow(m)), las = 1, cex = 0.6) 
+              side = 2, line = 0.3, at = seq(0, 1, length = nrow(m)), las = 1, cex = 0.6)
     }
 
-    plotMonocleModel <- function(isot, show.diameter = FALSE){
+plotMonocleModel <- function(isot, show.diameter = FALSE){
         mod <- isot@monocle.mod
         pca.red <- pca.reduce(mod@reduce.mat)
         pca.space.df <- data.frame(pca.red[, c(1, 2)])
@@ -721,8 +721,8 @@ plotDomain <- function(isot, domain.id){
                            position = position_jitter(h = 0.2, w = 0.2), na.rm = T,
                            stat = "unique")
         if (show.diameter == T){
-            g <- g + geom_path(aes(x = PC1, y = PC2), color = I("black"), size=0.75, data = diam) + 
-            geom_point(aes(x = PC1, y = PC2, color = cell_state), size = I(1.5), data = diam) 
+            g <- g + geom_path(aes(x = PC1, y = PC2), color = I("black"), size=0.75, data = diam) +
+            geom_point(aes(x = PC1, y = PC2, color = cell_state), size = I(1.5), data = diam)
         }
         g
     }
