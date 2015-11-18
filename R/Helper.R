@@ -46,6 +46,8 @@ chr2num <- function(c){
 seq2num <- function(seq){
     # chrX mapped to 23
     # chrM and chrY mapped to NA
+    # may need to adjust if original levels are not ordered
+    if (is.character(seq)) seq <- factor(seq, levels = paste0("chr", c(1:22, "X", "Y", "M")))
     l <- levels(seq)
     l <- gsub("chr", "", l)
     l[l == "X"] <- "23"
@@ -89,11 +91,12 @@ chr2gw <- function(chr, bins){
     }
     # check if chr is numeric
     if (!is.numeric(chr)) chr <- seq2num(chr)
-    na.omit(bin.from[chr] + bins)
+    bin.from[chr] + bins
 }
 
 aveMatFac <- function(mat, fac){
     # need to be able to handle character or numeric
+    if(class(fac)!="factor") fac <- factor(fac)
     rown <- length(levels(fac))
     coln <- dim(mat)[2]
     out <- matrix(, rown, coln)
@@ -215,17 +218,19 @@ empirical.pvalue <- function(null.vec, obs.vec, alternative = c("less", "greater
 	return(pvalue.vec)
 }
 
-pca.reduce <- function(mat){
-    sdev <- prcomp(mat)$sdev[1:20]
-    x <- 1:20
-    optpoint <- which.min(sapply(2:10, function(i) {
-                                     x2 <- pmax(0, x - i)
-                                     sum(lm(sdev ~ x + x2)$residuals ^ 2)
-}))
-    pcadim = optpoint + 1
+pca.reduce <- function(mat, pcadim = NULL){
+    if (is.null(pcadim)){
+        sdev <- prcomp(mat)$sdev[1:20]
+        x <- 1:20
+        optpoint <- which.min(sapply(2:10, function(i) {
+                                         x2 <- pmax(0, x - i)
+                                         sum(lm(sdev ~ x + x2)$residuals ^ 2)
+                                  }))
+        pcadim <- optpoint + 1
+    }
 
     tmppc <- prcomp(mat)
-    pca.red <- mat %*% tmppc$rotation[,1:pcadim]
+    pca.red <- mat %*% tmppc$rotation[, 1:pcadim]
     pca.red
 }
 

@@ -114,6 +114,59 @@ runModelFit <- function(isot, domain.id, ...){
     }
 }
 
+consolidateModels <- function(isot){
+    pb <- txtProgressBar(1, length(isot@domain), style = 3)
+    for (id in 1:length(isot@domain)){
+        setTxtProgressBar(pb, id)
+        mod.file <- isot@domain.list[[id]]@mod.file
+        load(mod.file)
+        isot@domain.list[[id]]@k <- mod@k
+        isot@domain.list[[id]]@p <- mod@p
+        isot@domain.list[[id]]@q <- mod@q
+        isot@domain.list[[id]]@clust.like <- mod@clust.like
+    }
+    isot
+}
+
+fitMonocleModel <- function(isot, num.cluster, num.path, root.node = NULL, reverse = FALSE){
+
+    clust.like.long <- do.call(cbind, lapply(1:length(isot@domain.list), function(id) {
+                                                 x <- isot@domain.list[[id]]
+                                                 if (dim(x@clust.like)[1] != 0){
+                                                     label <- apply(x@clust.like, 1, which.max)
+                                                     if (length(unique(label))!=1){
+                                                         out <- x@clust.like[, sort(unique(label)), drop = F]
+                                                         colnames(out) <- rep(id, ncol(out))
+                                                         out
+                                                     }
+                                                 }
+                                      }))
+    #     ord2 <- hclust(dist(t(clust.like.long), method = "manhattan"))$order
+    #     image.na(t(clust.like.long[, ord2]), c(0, 1))
+
+    # temporary needs fixing
+    rownames(clust.like.long) <- as.character(unique(isot@epidt[[1]]@table$cell))
+    # kmeans
+    kms.out <- kmeans(t(clust.like.long), num.cluster)
+    centers <- t(kms.out$centers)
+
+    d <- dist(centers)
+    dist.mat <- as.matrix(d)
+    ig <- graph.adjacency(dist.mat, mode = "undirected", weighted = T)
+    mst <- minimum.spanning.tree(ig)
+
+    next_node <<- 0
+    res <- monocle:::pq_helper(mst, use_weights = FALSE, root_node = root.node)
+    cc_ordering <- monocle:::extract_good_branched_ordering(res$subtree, res$root,
+                                                                        dist.mat, num.path, reverse)
+    mod <- new("MonocleMod", num.cluster = num.cluster, num.path = num.path,
+                            prob.mat = clust.like.long, reduce.mat = centers, dist.mat = dist.mat,
+                            mst = mst, ordering = cc_ordering)
+    isot@monocle.mod <- mod
+    isot
+}
+
+
 predictBinding <- function(isot, data.type, trt.file, peak.regions, chrlen.file, bin.width, naive = FALSE){
     load.chrlen(chrlen.file, bin.width)
     bins.gr <- make.bins.gr(chrlen.file, bin.width)

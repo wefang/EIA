@@ -68,12 +68,12 @@ plotReducedMatrix <- function(isot){
         par(mar = c(4, 6, 4, 2))
         image.na(t(m[ord, hclust(dist(t(m)))$order]), zlim = c(min(m) - 0.1, max(m) + 0.1), axes = F)
         mtext(text = isot@monocle.mod@ordering$sample_name,
-              side = 2, line = 0.3, at = seq(0, 1, length = nrow(m)), las = 1, cex = 0.6)
+              side = 2, line = 0.3, at = seq(1, length = nrow(m), by = 1), las = 1, cex = 0.6)
     }
 
 plotMonocleModel <- function(isot, show.diameter = FALSE){
         mod <- isot@monocle.mod
-        pca.red <- pca.reduce(mod@reduce.mat)
+        pca.red <- pca.reduce(mod@prob.mat)
         pca.space.df <- data.frame(pca.red[, c(1, 2)])
 
         edge.list <- as.data.frame(get.edgelist(mod@mst))
@@ -92,9 +92,9 @@ plotMonocleModel <- function(isot, show.diameter = FALSE){
 
         g <- ggplot(edge.df, aes(x = source.PC1, y = source.PC2))
         g <- g + geom_segment(aes(xend = target.PC1, yend= target.PC2, color = cell_state), na.rm = T)
-        g <- g + geom_point(aes(color = cell_state), stat = "unique", na.rm = T)
+        g <- g + geom_point(aes(color = cell_state), position = "jitter", stat = "unique", na.rm = T)
         g <- g + geom_text(aes(label = source, color = cell_state, size = 0.4),
-                           position = position_jitter(h = 0.2, w = 0.2), na.rm = T,
+                           position = position_jitter(h = 2, w = 2), na.rm = T,
                            stat = "unique")
         if (show.diameter == T){
             g <- g + geom_path(aes(x = PC1, y = PC2), color = I("black"), size=0.75, data = diam) +

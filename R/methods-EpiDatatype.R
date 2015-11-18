@@ -1,14 +1,14 @@
 newEpiDatatype <- function(name, tab, has.control,
                            input.type = c("bam", "bed", "tagAlign", "bin"),
-                           bin.width, grange, data.dir){
+                           chrlen.file, bin.width, grange, data.dir){
     new("EpiDatatype", name = name,
         table = tab, cells = unique(as.character(tab$cell)),
-        input.type = input.type, bin.width = bin.width,
+        input.type = input.type, chrlen.file = chrlen.file, bin.width = bin.width,
         has.control = has.control, data.dir = data.dir,
         grange = grange)
 }
 
-convert2bin <- function(epidt, chrlen.file){
+convert2bin <- function(epidt){
     if (epidt@has.control == FALSE){
         files <- epidt@table$trt.file
     } else {
@@ -18,32 +18,40 @@ convert2bin <- function(epidt, chrlen.file){
     # get library size and size factors when converting
     total.counts <- numeric(length(files))
     out.files <- character(length(files))
-    for (i in 1:length(files)){
-        message(paste("loading file", files[i]))
-        out.files[i] <- file.path(epidt@data.dir, paste0(basename(files[i]), ".bin"))
-        if (input.type == "tagAlign"){
-            temp <- ta2bin(files[i], chrlen.file, epidt@bin.width)
-        }
-        if (input.type == "bam"){
-            temp <- tagAlign2bin(files[i], chrlen.file, epidt@bin.width)
-        }
-        writeBin(as.integer(temp), out.files[i], size = 4)
-        total.counts[i] <- sum(temp)
+    if (!dir.exists(epidt@data.dir)){
+        dir.create(epidt@data.dir)
     }
-    size.factors <- median(total.counts)/total.counts
-    epidt@table$trt.sf <- size.factors[1:length(epidt@table$trt.file)]
-    epidt@table$trt.bin <- out.files[1:length(epidt@table$trt.file)]
-    if (has.control == T){
-        epidt@table$ctrl.sf <- size.factors[(length(epidt@table@trt.file)+1):length(size.factors)]
-        epidt@table$ctrl.bin <- out.files[(length(epidt@table@trt.file)+1):length(out.files)]
+    for (i in 1:length(files)){
+        #         message(paste("loading file", files[i]))
+        out.files[i] <- file.path(epidt@data.dir, paste0(sub("\\.[[:alnum:]]+$", "", basename(files[i])), ".bin"))
+        #         if (epidt@input.type == "tagAlign"){
+        #             temp <- ta2bin(files[i], epidt@chrlen.file, epidt@bin.width)
+        #         }
+        #         if (epidt@input.type == "bam"){
+        #             temp <- tagAlign2bin(files[i], epidt@chrlen.file, epidt@bin.width)
+        #         }
+        #         if (epidt@input.type == "bin"){
+        #             warning("input is already bin, conversion not needed.")
+        #         }
+        #         writeBin(as.integer(temp), out.files[i], size = 4)
+        #         total.counts[i] <- sum(temp)
+    }
+    #     size.factors <- median(total.counts) / total.counts
+    #     epidt@table$trt.sf <- size.factors[1:length(epidt@table$trt.file)]
+    epidt@table$trt.old <- epidt@table$trt.file 
+    epidt@table$trt.file <- out.files[1:length(epidt@table$trt.file)]
+    if (epidt@has.control == T){
+        #         epidt@table$ctrl.sf <- size.factors[(length(epidt@table$trt.file)+1):length(size.factors)]
+        epidt@table$ctrl.old <- epidt@table$ctrl.file
+        epidt@table$ctrl.file <- out.files[(length(epidt@table$trt.file)+1):length(out.files)]
     }
 
     epidt
 }
 
 getSizeFactors <- function(epidt){
-    if (input.type != "bin") {
-        stop("only use this function when input bin counts")
+    if (epidt@input.type != "bin") {
+        warning("input type is not bin.")
     }
     if (epidt@has.control == FALSE){
         files <- epidt@table$trt.file
@@ -58,30 +66,28 @@ getSizeFactors <- function(epidt){
     }
     size.factors <- median(total.counts)/total.counts
     epidt@table$trt.sf <- size.factors[1:length(epidt@table$trt.file)]
-    epidt@table$ctrl.sf <- size.factors[(length(epidt@table@trt.file)+1):length(size.factors)]
+    if (epidt@has.control == TRUE){
+        epidt@table$ctrl.sf <- size.factors[(length(epidt@table$trt.file)+1):length(size.factors)]
+    }
 
     epidt
 }
 
-generateMatrix <- function(epidt, chrlen.file, bin.width){
+generateMatrix <- function(epidt){
     datatype <- epidt@name
     tab <- epidt@table
     output.dir <- epidt@data.dir
     if (!dir.exists(output.dir)){
         dir.create(output.dir)
     }
-    load.chrlen(chrlen.file, bin.width)
-    message(paste("loaded chromosome lengths. \n bin width:", bin.width))
+    load.chrlen(epidt@chrlen.file, epidt@bin.width)
+    message(paste("loaded chromosome lengths. \n bin width:", epidt@bin.width))
 
     for (chr in 1:23){
-        message(paste("reading in counts for chromosome", chr))
+        message(paste("starting chromosome", chr))
         trt.counts.mat <- matrix(, nrow(tab), bin.counts[chr])
         for (i in 1:nrow(tab)){
-            if (epidt@input.type == "bin"){
-                bin.file <- tab[i, ]$trt.file
-            } else {
-                bin.file  <- tab[i, ]$trt.bin
-            }
+            bin.file <- tab[i, ]$trt.file
             con <- file(bin.file, open = "rb")
             # read only counts for current chromosome, 4 bytes integers
             seek(con, where = 4 * bin.from[chr])
@@ -101,13 +107,10 @@ generateMatrix <- function(epidt, chrlen.file, bin.width){
                 file.path(output.dir, paste0(datatype, "_trt_ave_chr", chr, ".rds")))
 
         if (epidt@has.control == TRUE){
+            message("processing control matrix...")
             ctrl.counts.mat <- matrix(, nrow(tab), bin.counts[chr])
             for (i in 1:nrow(tab)){
-                if (epidt@input.type == "bin"){
-                    bin.file <- tab[i, ]$ctrl.file
-                } else {
-                    bin.file  <- tab[i, ]$ctrl.bin
-                }
+                bin.file <- tab[i, ]$ctrl.file
                 con <- file(bin.file, open = "rb")
                 # read only counts for current chromosome, 4 bytes integers
                 seek(con, where = 4 * bin.from[chr])

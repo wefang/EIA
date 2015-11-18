@@ -17,6 +17,8 @@ Imports:
     Rcpp,
     RcppArmadillo,
     gtools,
+    tools,
+    R.utils,
     matrixStats,
     DESeq,
     monocle,

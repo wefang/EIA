@@ -9,13 +9,13 @@ check.epidatatype <- function(object){
     tab <- object@table
     # check if the data.frame has the specified columns
     if (object@has.control == TRUE){
-        if (!all(c("cell", "rep", "trt.file", "ctrl.file") %in%
+        if (!all(c("cell", "trt.file", "ctrl.file") %in%
                 colnames(tab))){
             msg <- "table is not in the selected format"
             errors <- c(errors, msg)
         }
     } else {
-        if (!all(c("cell", "rep", "trt.file") %in%
+        if (!all(c("cell", "trt.file") %in%
                 colnames(tab))){
             msg <- "table is not in the selected format"
             errors <- c(errors, msg)
@@ -29,6 +29,7 @@ setClass("EpiDatatype",
                    table = "data.frame",
                    cells = "character",
                    input.type = "character",
+                   chrlen.file = "character",
                    bin.width = "numeric",
                    has.control = "logical",
                    data.dir = "character",
