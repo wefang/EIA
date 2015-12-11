@@ -167,6 +167,42 @@ mix.align <- function(align1, align2, prop, chrlen.file, bin.width){
     return(list(counts1, counts2))
 }
 
+mix.align.region <- function(align1, align2, region, prop, chrlen.file, bin.width){
+    # extract prop from each file and exchange
+    # prop >= 0 <= 0.5
+    # output bin counts for the mixeds align
+
+    load.chrlen(chrlen.file, bin.width)
+   
+    align1.diff <- findOverlaps(align1, region)
+    align2.diff <- findOverlaps(align2, region)
+    
+    index.diff1 <- unique(queryHits(align1.diff))
+    index.diff2 <- unique(queryHits(align2.diff))
+    xchange.diff1 <- sample(index.diff1, ceiling(length(index.diff1) * prop))
+    xchange.diff2 <- sample(index.diff2, ceiling(length(index.diff2) * prop))
+
+    xchange.other1 <- sample((1:length(align1))[-index.diff1], ceiling((length(align1)-length(index.diff1)) * 0.5))
+    xchange.other2 <- sample((1:length(align2))[-index.diff2], ceiling((length(align2)-length(index.diff2)) * 0.5))
+
+    xchange1 <- union(xchange.diff1, xchange.other1)
+    xchange2 <- union(xchange.diff2, xchange.other2)
+
+    center1 <- ceiling((start(align1) + end(align1)) / 2)
+    center2 <- ceiling((start(align2) + end(align2)) / 2)
+    bin.gw1 <- chr2gw(seqnames(align1), bp2bin(center1, bin.width))
+    bin.gw2 <- chr2gw(seqnames(align2), bp2bin(center2, bin.width))
+
+    counts1 <- numeric(bin.from[24])
+    counts2 <- numeric(bin.from[24])
+    counts1 <- count_bins(counts1, bin.gw1[-xchange1])
+    counts1 <- count_bins(counts1, bin.gw2[xchange2])
+    counts2 <- count_bins(counts2, bin.gw2[-xchange2])
+    counts2 <- count_bins(counts2, bin.gw1[xchange1])
+
+    return(list(counts1, counts2))
+}
+
 bam2bin <- function(bam.file, chrlen.file, bin.width){
     alignment <- readGAlignments(bam.file)
     countReads(alignment, chrlen.file, bin.width)

@@ -166,7 +166,6 @@ fitMonocleModel <- function(isot, num.cluster, num.path, root.node = NULL, rever
     isot
 }
 
-
 predictBinding <- function(isot, data.type, trt.file, peak.regions, chrlen.file, bin.width, naive = FALSE){
     load.chrlen(chrlen.file, bin.width)
     bins.gr <- make.bins.gr(chrlen.file, bin.width)
@@ -257,6 +256,7 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2, peaks.co
     load.chrlen(chrlen.file, bin.width)
     n.cond1 <- length(bam.cond1)
     n.cond2 <- length(bam.cond2)
+
     if (mix.prop != 0){
         if (n.cond1 != n.cond2) stop("don't know how to mix unequal replicates")
         counts.mat.cond1 <- matrix(, n.cond1, bin.from[24])
@@ -272,6 +272,7 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2, peaks.co
         counts.mat.cond1 <- do.call(rbind, lapply(bam.cond1, function(bam) bam2bin(bam, chrlen.file, bin.width)))
         counts.mat.cond2 <- do.call(rbind, lapply(bam.cond2, function(bam) bam2bin(bam, chrlen.file, bin.width)))
     }
+
     # convert matrix
     total.counts1 <- rowSums(counts.mat.cond1)
     total.counts2 <- rowSums(counts.mat.cond2)
@@ -280,6 +281,7 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2, peaks.co
 
     val.mat.cond1 <- log2(counts.mat.cond1 * size.factor1 + 1)
     val.mat.cond2 <- log2(counts.mat.cond2 * size.factor2 + 1)
+
     # average over replicates
     val.cond1 <- colMeans(val.mat.cond1)
     val.cond2 <- colMeans(val.mat.cond2)
