@@ -203,11 +203,21 @@ mix.align.region <- function(align1, align2, region, prop, chrlen.file, bin.widt
     return(list(counts1, counts2))
 }
 
+#' Convert bam files to bin counts
+#' 
+#' @param bam.file bam file
+#' @importFrom GenomicAlignments readGAlignments
 bam2bin <- function(bam.file, chrlen.file, bin.width){
     alignment <- readGAlignments(bam.file)
     countReads(alignment, chrlen.file, bin.width)
 }
 
+#' Convert bam files to bin counts
+#' 
+#' @param bam.file bam file
+#' @importFrom R.utils gunzip
+#' @importFrom rtracklayer import.bed
+#' @importFrom tools file_ext
 ta2bin <- function(ta.file, chrlen.file, bin.width){
     if (file_ext(ta.file) == "gz"){
         ta.file <- gunzip(ta.file, temporary = T, remove = F)

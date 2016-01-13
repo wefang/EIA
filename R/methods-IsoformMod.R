@@ -1,4 +1,12 @@
-findIsoforms <- function(isom, k = 15){
+#' Main function to run isoform searching algorithm
+#'
+#' @param isom IsoformMod object
+#' @param k Number of isoforms to start with
+#' @param pilot.rep Number of random starting points to begin with
+#' @importFrom matrixStats colMaxs 
+#' @importFrom gtools rdirichlet 
+#' @useDynLib riso riso_SearchMode
+findIsoforms <- function(isom, k = 15, pilot.rep = 500, pilot.max.iter = 30, pilot.tol = 0.001){
 
     mat <- isom@mat
     bg.mean <- isom@bg.mean
@@ -16,11 +24,6 @@ findIsoforms <- function(isom, k = 15){
         }
     }
 
-    # parameters for pilot round
-    pilot.rep <- 100
-    pilot.max.iter <- 30
-    pilot.tol <- 0.01
-
     pilot.loglike <- numeric()
     param.list <- list()
     message(paste("running", k, "components..."))
@@ -36,7 +39,8 @@ findIsoforms <- function(isom, k = 15){
         pilot.loglike[rep] <- temp$loglike
         param.list[[rep]] <- list(p = temp$p, q = temp$q, theta1 = temp$theta1, sigma1 = temp$sigma1)
     }
-    # pick top 10% to finish
+
+    # pick top 5% to finish
     top.indices <- order(pilot.loglike, decreasing = T)[1:ceiling(pilot.rep * 0.05)]
     second.param <- param.list[top.indices]
     second.loglike <- numeric()

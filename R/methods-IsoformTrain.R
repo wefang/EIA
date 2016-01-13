@@ -247,7 +247,11 @@ predictBinding <- function(isot, data.type, trt.file, peak.regions, chrlen.file,
     return(gr)
 }
 
-differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2, peaks.cond1, peaks.cond2,
+#' Run differential analysis for two conditions (in parallel)
+#'
+#' @param isot IsoformTrain object
+#' @importFrom BiocParallel MulticoreParam
+differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
                                  n.perm, mix.prop = 0, chrlen.file, bin.width, n.cores){
 
     multicoreParam <- MulticoreParam(workers = n.cores)
@@ -257,21 +261,9 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2, peaks.co
     n.cond1 <- length(bam.cond1)
     n.cond2 <- length(bam.cond2)
 
-    if (mix.prop != 0){
-        if (n.cond1 != n.cond2) stop("don't know how to mix unequal replicates")
-        counts.mat.cond1 <- matrix(, n.cond1, bin.from[24])
-        counts.mat.cond2 <- matrix(, n.cond2, bin.from[24])
-        for (i in 1:n.cond1){
-            align1 <- readGAlignments(bam.cond1[i])
-            align2 <- readGAlignments(bam.cond2[i])
-            mix.out <- mix.align(align1, align2, mix.prop, chrlen.file, bin.width)
-            counts.mat.cond1[i, ] <- mix.out[[1]]
-            counts.mat.cond2[i, ] <- mix.out[[2]]
-        }
-    } else {
-        counts.mat.cond1 <- do.call(rbind, lapply(bam.cond1, function(bam) bam2bin(bam, chrlen.file, bin.width)))
-        counts.mat.cond2 <- do.call(rbind, lapply(bam.cond2, function(bam) bam2bin(bam, chrlen.file, bin.width)))
-    }
+    if (n.cond1 != n.cond2) stop("don't know how to mix unequal replicates")
+    counts.mat.cond1 <- do.call(rbind, lapply(bam.cond1, function(bam) bam2bin(bam, chrlen.file, bin.width)))
+    counts.mat.cond2 <- do.call(rbind, lapply(bam.cond2, function(bam) bam2bin(bam, chrlen.file, bin.width)))
 
     # convert matrix
     total.counts1 <- rowSums(counts.mat.cond1)
@@ -417,3 +409,12 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2, peaks.co
         }, BPPARAM = multicoreParam)
     result
 }
+
+changeModDir <- function(isot, mod.dir){
+   isot@mod.dir <- mod.dir
+    for (i in 1:length(isot@domain.list)){
+        isot@domain.list[[i]]@mod.file <- file.path(mod.dir, basename(isot@domain.list[[i]]@mod.file))
+    }
+    isot
+}
+

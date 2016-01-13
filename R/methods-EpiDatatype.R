@@ -8,6 +8,10 @@ newEpiDatatype <- function(name, tab, has.control,
         grange = grange)
 }
 
+#' Convert alignment files to bin counts (both treatment and control), supports tagAlign and bam for now.
+#'
+#' @param epidt EpiDatatype (need link) object
+#' @importFrom tools file_path_sans_ext
 convert2bin <- function(epidt){
     if (epidt@has.control == FALSE){
         files <- epidt@table$trt.file
@@ -22,26 +26,27 @@ convert2bin <- function(epidt){
         dir.create(epidt@data.dir)
     }
     for (i in 1:length(files)){
-        #         message(paste("loading file", files[i]))
-        out.files[i] <- file.path(epidt@data.dir, paste0(sub("\\.[[:alnum:]]+$", "", basename(files[i])), ".bin"))
-        #         if (epidt@input.type == "tagAlign"){
-        #             temp <- ta2bin(files[i], epidt@chrlen.file, epidt@bin.width)
-        #         }
-        #         if (epidt@input.type == "bam"){
-        #             temp <- tagAlign2bin(files[i], epidt@chrlen.file, epidt@bin.width)
-        #         }
-        #         if (epidt@input.type == "bin"){
-        #             warning("input is already bin, conversion not needed.")
-        #         }
-        #         writeBin(as.integer(temp), out.files[i], size = 4)
-        #         total.counts[i] <- sum(temp)
+        message(paste("converting file", files[i]))
+        out.files[i] <- file.path(epidt@data.dir, paste0(sub("\\.[[:alnum:]]+$", "", basename(file_path_sans_ext(files[i]))), ".bin"))
+        message(paste("output:", out.files[i]))
+        if (epidt@input.type == "tagAlign"){
+            temp <- ta2bin(files[i], epidt@chrlen.file, epidt@bin.width)
+        }
+        if (epidt@input.type == "bam"){
+            temp <- bam2bin(files[i], epidt@chrlen.file, epidt@bin.width)
+        }
+        if (!epidt@input.type %in% c("bam", "tagAlign")){
+            stop("unsupported input file type.")
+        }
+        writeBin(as.integer(temp), out.files[i], size = 4)
+        total.counts[i] <- sum(temp)
     }
-    #     size.factors <- median(total.counts) / total.counts
-    #     epidt@table$trt.sf <- size.factors[1:length(epidt@table$trt.file)]
+    size.factors <- median(total.counts) / total.counts
+    epidt@table$trt.sf <- size.factors[1:length(epidt@table$trt.file)]
     epidt@table$trt.old <- epidt@table$trt.file 
     epidt@table$trt.file <- out.files[1:length(epidt@table$trt.file)]
     if (epidt@has.control == T){
-        #         epidt@table$ctrl.sf <- size.factors[(length(epidt@table$trt.file)+1):length(size.factors)]
+        epidt@table$ctrl.sf <- size.factors[(length(epidt@table$trt.file)+1):length(size.factors)]
         epidt@table$ctrl.old <- epidt@table$ctrl.file
         epidt@table$ctrl.file <- out.files[(length(epidt@table$trt.file)+1):length(out.files)]
     }
@@ -73,6 +78,9 @@ getSizeFactors <- function(epidt){
     epidt
 }
 
+#' Generate counts matrix per chromosome. Results are saved as .rds files in data directory.
+#' 
+#' @param epidt EpiDatatype Object
 generateMatrix <- function(epidt){
     datatype <- epidt@name
     tab <- epidt@table
@@ -94,15 +102,16 @@ generateMatrix <- function(epidt){
             trt.counts.mat[i, ] <- readBin(con, integer(), bin.counts[chr])
             close(con)
         }
-        message("converting counts..")
+
+        message("transforming counts..")
         trt.conv.mat <- log2(trt.counts.mat * tab$trt.sf + 1)
         message("taking average over replicates..")
         trt.ave.mat <- aveMatFac(trt.conv.mat, tab$cell)
         message(paste("saving matrices to", output.dir))
         saveRDS(trt.counts.mat, file =
                 file.path(output.dir, paste0(datatype, "_trt_counts_chr", chr, ".rds")))
-        saveRDS(trt.conv.mat, file =
-                file.path(output.dir, paste0(datatype, "_trt_conv_chr", chr, ".rds")))
+        #         saveRDS(trt.conv.mat, file =
+        #                 file.path(output.dir, paste0(datatype, "_trt_conv_chr", chr, ".rds")))
         saveRDS(trt.ave.mat, file =
                 file.path(output.dir, paste0(datatype, "_trt_ave_chr", chr, ".rds")))
 
@@ -124,8 +133,8 @@ generateMatrix <- function(epidt){
             message(paste("saving matrices to", output.dir))
             saveRDS(ctrl.counts.mat, file =
                     file.path(output.dir, paste0(datatype, "_ctrl_counts_chr", chr, ".rds")))
-            saveRDS(ctrl.conv.mat, file =
-                    file.path(output.dir, paste0(datatype, "_ctrl_conv_chr", chr, ".rds")))
+            #             saveRDS(ctrl.conv.mat, file =
+            #                     file.path(output.dir, paste0(datatype, "_ctrl_conv_chr", chr, ".rds")))
             saveRDS(ctrl.ave.mat, file =
                     file.path(output.dir, paste0(datatype, "_ctrl_ave_chr", chr, ".rds")))
         }

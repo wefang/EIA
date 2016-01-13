@@ -1,4 +1,17 @@
-plotIsoformModel <- function(isom, zlim, main="", cell.names=""){
+#' Plot the isoform fitting results, called by \code{\link{plotDomain}}
+#'
+#' @param isom IsoformMod object
+#' @param zlim Range of values in the obeserved matrix
+#' @param col.sel Indices of selected columns to plot, default to all columns.
+#' @param main Title of plot
+#' @param cell.names Row names
+#' @importFrom RColorBrewer brewer.pal
+plotIsoformModel <- function(isom, zlim, col.sel = NULL, main="", cell.names=""){
+    # plot only selected columns
+    if (is.null(col.sel)){
+        col.sel <- 1:ncol(isom@mat)
+    }
+
     # isoforms that are used
     isoform.index <- sort(unique(isom@labels))
     # subset used isoforms
@@ -24,13 +37,13 @@ plotIsoformModel <- function(isom, zlim, main="", cell.names=""){
 
     # original matrix
     par(mar = c(0, 1, 2, 0.8))
-    image.na(t(isom@mat[ord, ]), zlim, col = brewer.pal(9, "YlGn"),
+    image.na(t(isom@mat[ord, col.sel]), zlim, col = brewer.pal(9, "YlGn"),
               axes=FALSE, rowsep = isoform.sep, sepcolor = "#2171b5", sepwidth = 0.05)
     title(main, line = 0.5, cex = 1)
 
     # isoform matrix
     par(mar = c(1, 1, 1, 0.8))
-    image.na(t(q.mat[q.ord, , drop=F]), col = brewer.pal(9, "Blues"),
+    image.na(t(q.mat[q.ord, col.sel, drop=F]), col = brewer.pal(9, "Blues"),
              zlim = c(0, 1),rowsep = 1:(length(isoform.index) - 1), axes=FALSE)
 
     # isoform indicator
@@ -45,15 +58,16 @@ plotIsoformModel <- function(isom, zlim, main="", cell.names=""){
     image.na(t(matrix(isom@p[isoform.index[q.ord]])), zlim = c(0, 1), col = brewer.pal(9, "PuRd"), cellnote = T, axes = F,
              rowsep = 1:(length(isoform.index) - 1))
     mtext(paste("isoform", 1:length(isoform.index)), side = 2, las = 1, at = seq(length(isoform.index), 1, by = -1), adj = 1.2, font = 2, cex = 0.8)
+    layout(1)
 }
 
-plotDomain <- function(isot, domain.id){
+plotDomain <- function(isot, domain.id, ...){
     d.mod <- isot@domain.list[[domain.id]]
     load(d.mod@mod.file, .GlobalEnv)
     main <- paste0("Index: ", domain.id, ", ", dim(mod@mat)[2], " bins, Region: " ,
                   d.mod@chr, ": ", d.mod@start, "-", d.mod@end)
     cells <- rownames(mod@mat)
-    plotIsoformModel(mod, c(0, 8), main, cells)
+    plotIsoformModel(mod, c(0, 8), main = main, cell.names = cells, ...)
     rm(mod, envir = .GlobalEnv)
 }
 
