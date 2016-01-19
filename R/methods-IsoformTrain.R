@@ -1,10 +1,17 @@
 addDatatype <- function(isot, epidt){
-    if (!is(epidt, "EpiDatatype")) stop("please only add EpiDatatype objects")
+    if (!is(epidt, "EpiDatatype")) stop("Please only add EpiDatatype objects")
     isot@data.types <- c(isot@data.types, epidt@name)
     isot@epidt[[epidt@name]] <- epidt
     isot
 }
 
+#' Setup the domain model
+#' @importFrom GenomicRanges start
+#' @importFrom GenomicRanges end
+#' @importFrom GenomicRanges intersect 
+#' @importFrom GenomicRanges seqnames 
+#' @importFrom GenomicRanges findOverlaps 
+#' @importFrom GenomicRanges subjectHits 
 setupDomainModel <- function(isot, chrlen.file, bin.width, mod.dir,
                              data.types = isot@data.types){
     # domain.file is a bed file specifying the tp domain
@@ -25,11 +32,13 @@ setupDomainModel <- function(isot, chrlen.file, bin.width, mod.dir,
                         start.bin = bp2bin(start(d), bin.width),
                         end.bin = bp2bin(end(d), bin.width),
                         data.types = data.types)
+
         # find overlaped bins for each datatype
         for (j in 1:length(data.types)){
             dtype <- data.types[j]
             cells <- as.character(unique(isot@epidt[[dtype]]@table$cell))
-            elements <- BiocGenerics::intersect(isot@epidt[[dtype]]@grange, d)
+            elements <- intersect(isot@epidt[[dtype]]@grange, d)
+            # overlap of bins in the chromosome and elements
             bins <- unique(subjectHits(findOverlaps(elements,
                                              bins.gr[seqnames(bins.gr) == chr])))
             temp.mod@element.list[[dtype]] <- list(cells = cells, bins = bins)
@@ -39,6 +48,8 @@ setupDomainModel <- function(isot, chrlen.file, bin.width, mod.dir,
     isot
 }
 
+#' generate the model files for fitting
+#' @importFrom matrixStats rowSds
 generateModelFile <- function(isot, id = 1:length(isot@domain)){
     if(!dir.exists(isot@mod.dir)) dir.create(isot@mod.dir)
     chr.last <- ""
@@ -63,7 +74,7 @@ generateModelFile <- function(isot, id = 1:length(isot@domain)){
             bins <- isot@domain.list[[domain.id]]@element.list[[dtype]]$bins
             # prevent loading the raw matrix multiple times
             if (chr != chr.last){
-                # message(paste("loading data matrix for", dtype, chr))
+                message(paste("loading data matrix for", dtype,  chr))
                 raw.mat.bydt[[dtype]] <-
                     readRDS(file.path(isot@epidt[[dtype]]@data.dir,
                                       paste0(dtype, "_trt_ave_chr", chr.num, ".rds")))
@@ -78,6 +89,9 @@ generateModelFile <- function(isot, id = 1:length(isot@domain)){
                 rownames(bg.mean.bydt[[dtype]]) <- isot@epidt[[dtype]]@cells
                 rownames(bg.sd.bydt[[dtype]]) <- isot@epidt[[dtype]]@cells
 
+                colnames(mat.bydt[[dtype]]) <- rep(dtype, ncol(mat.bydt[[dtype]]))
+                colnames(bg.mean.bydt[[dtype]]) <- rep(dtype, ncol(mat.bydt[[dtype]])) 
+                colnames(bg.sd.bydt[[dtype]]) <- rep(dtype, ncol(mat.bydt[[dtype]]))
             }
         }
         chr.last <- chr
@@ -92,6 +106,10 @@ generateModelFile <- function(isot, id = 1:length(isot@domain)){
                 bg.mean <- bg.mean[complete.cases(bg.mean), ]
                 bg.sd <- bg.sd[complete.cases(bg.sd), ]
             }
+        } else {
+            mat <- do.call(cbind, mat.bydt)
+            bg.mean <- do.call(cbind, bg.mean.bydt)
+            bg.sd <- do.call(cbind, bg.sd.bydt)
         }
 
         mod <- new("IsoformMod", mat = mat, bg.mean = bg.mean, bg.sd = bg.sd)
@@ -124,6 +142,7 @@ consolidateModels <- function(isot){
         isot@domain.list[[id]]@p <- mod@p
         isot@domain.list[[id]]@q <- mod@q
         isot@domain.list[[id]]@clust.like <- mod@clust.like
+        isot@domain.list[[id]]@labels <- mod@labels
     }
     isot
 }
@@ -247,13 +266,16 @@ predictBinding <- function(isot, data.type, trt.file, peak.regions, chrlen.file,
     return(gr)
 }
 
-#' Run differential analysis for two conditions (in parallel)
+#' Run differential analysis for two treatment conditions (in parallel)
 #'
 #' @param isot IsoformTrain object
 #' @importFrom BiocParallel MulticoreParam
-differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
-                                 n.perm, mix.prop = 0, chrlen.file, bin.width, n.cores){
-
+#' @importFrom BiocParallel bplapply 
+#' @importFrom matrixStats rowSds
+#' @useDynLib riso riso_calLikeIso
+runDifferentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
+                                    n.perm = 2000, chrlen.file, bin.width, n.cores,
+                                    id = 1:length(isot@domain)){
     multicoreParam <- MulticoreParam(workers = n.cores)
 
     # count matrix gw
@@ -262,15 +284,18 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
     n.cond2 <- length(bam.cond2)
 
     if (n.cond1 != n.cond2) stop("don't know how to mix unequal replicates")
-    counts.mat.cond1 <- do.call(rbind, lapply(bam.cond1, function(bam) bam2bin(bam, chrlen.file, bin.width)))
-    counts.mat.cond2 <- do.call(rbind, lapply(bam.cond2, function(bam) bam2bin(bam, chrlen.file, bin.width)))
+    counts.mat.cond1 <- matrix(, n.cond1, bin.from[24])
+    counts.mat.cond2 <- matrix(, n.cond2, bin.from[24])
+    for (i in 1:n.cond1){
+        counts.mat.cond1[i, ] <- bam2bin(bam.cond1[i], chrlen.file, 200) 
+        counts.mat.cond2[i, ] <- bam2bin(bam.cond2[i], chrlen.file, 200)
+    }
 
     # convert matrix
     total.counts1 <- rowSums(counts.mat.cond1)
     total.counts2 <- rowSums(counts.mat.cond2)
     size.factor1 <- median(c(total.counts1, total.counts2)) / total.counts1
     size.factor2 <- median(c(total.counts1, total.counts2)) / total.counts2
-
     val.mat.cond1 <- log2(counts.mat.cond1 * size.factor1 + 1)
     val.mat.cond2 <- log2(counts.mat.cond2 * size.factor2 + 1)
 
@@ -278,26 +303,17 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
     val.cond1 <- colMeans(val.mat.cond1)
     val.cond2 <- colMeans(val.mat.cond2)
 
-    # find overlaping bins with peaks
-    bins.gr <- make.bins.gr(chrlen.file, bin.width)
-    bins.peak.cond1 <- queryHits(findOverlaps(bins.gr, peaks.cond1))
-    bins.peak.cond2 <- queryHits(findOverlaps(bins.gr, peaks.cond2))
-
     # estimate global theta1, sigma1
-    theta1.global.cond1 <- mean(val.cond1[bins.peak.cond1])
-    theta1.global.cond2 <- mean(val.cond2[bins.peak.cond2])
-    sigma1.global.cond1 <- sd(val.cond1[bins.peak.cond1])
-    sigma1.global.cond2 <- sd(val.cond2[bins.peak.cond2])
-
-    # estimate after mix
-    theta1.global.cond12 <- mean(val.cond1[bins.peak.cond2])
-    theta1.global.cond21 <- mean(val.cond2[bins.peak.cond1])
-    sigma1.global.cond12 <- sd(val.cond1[bins.peak.cond2])
-    sigma1.global.cond21 <- sd(val.cond2[bins.peak.cond1])
+    cutoff1 <- quantile(val.cond1, 0.98)
+    cutoff2 <- quantile(val.cond2, 0.98)
+    theta1.global.cond1 <- mean(val.cond1[val.cond1 > cutoff1])
+    theta1.global.cond2 <- mean(val.cond2[val.cond2 > cutoff2])
+    sigma1.global.cond1 <- sd(val.cond1[val.cond1 > cutoff1])
+    sigma1.global.cond2 <- sd(val.cond2[val.cond2 > cutoff2])
 
     result <-
-        bplapply(1:length(isot@domain), function(domain.id){
-
+        bplapply(1:length(id), function(i){
+                     domain.id <- id[i]
                      print(domain.id)
                      dmod <- isot@domain.list[[domain.id]]
                      if (is.null(dmod@q)){
@@ -313,7 +329,10 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
                      dt.id <- which(names(bins.counts.bydt) == data.type)
 
                      bins <- bins.bydt[[data.type]]
-                     q.sel <- sort(unique(apply(dmod@clust.like, 1, which.max)))
+                     
+                     # get the q matrix
+                     label.tab <- table(apply(dmod@clust.like, 1, which.max))
+                     q.sel <- as.numeric(names(label.tab)[label.tab > 3])
                      try({
                          q <- dmod@q[q.sel, (bins.from.bydt[[dt.id]] + 1):bins.from.bydt[[dt.id+1]]]
                      })
@@ -322,50 +341,27 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
                          results[[domain.id]] <- NA
                          next
                      }
-
-                     bins.gw <- chr2gw(rep(chr.num, length(bins)), bins)
+                     
+                     tryCatch(bins.gw <- chr2gw(rep(chr.num, length(bins)), bins), warning = function(w) {print(bins.gw); print(domain.id)})
                      start.bin.gw <- chr2gw(chr.num, dmod@start.bin)
                      end.bin.gw <- chr2gw(chr.num, dmod@end.bin)
-
-                     # estimate local theta1, sigma1
-                     domain.bins.peak.cond1 <- bins.peak.cond1[bins.peak.cond1 > start.bin.gw & bins.peak.cond1 < end.bin.gw]
-                     domain.bins.peak.cond2 <- bins.peak.cond2[bins.peak.cond2 > start.bin.gw & bins.peak.cond2 < end.bin.gw]
-
-                     if (length(domain.bins.peak.cond1) >= 5){
-                         theta1.est.cond1 <-
-                             mean(val.cond1[domain.bins.peak.cond1]) * (1 - mix.prop) +
-                             mean(val.cond1[domain.bins.peak.cond2]) * mix.prop
-                         sigma1.est.cond1 <-
-                             sd(val.cond1[domain.bins.peak.cond1]) * (1 - mix.prop) +
-                             sd(val.cond1[domain.bins.peak.cond2]) * mix.prop
-                     } else {
-                         theta1.est.cond1 <-
-                             global.theta1.cond1 * (1 - mix.prop) +
-                             global.theta1.cond12 * mix.prop
-                         sigma1.est.cond1 <-
-                             global.sigma1.cond1 * (1 - mix.prop) +
-                             global.sigma1.cond12 * mix.prop
-                     }
-                     # repeat for condition 2
-                     if (length(domain.bins.peak.cond2) >= 5){
-                         theta1.est.cond2 <-
-                             mean(val.cond2[domain.bins.peak.cond2]) * (1 - mix.prop) +
-                             mean(val.cond2[domain.bins.peak.cond1]) * mix.prop
-                         sigma1.est.cond2 <-
-                             sd(val.cond2[domain.bins.peak.cond2]) * (1 - mix.prop) +
-                             sd(val.cond2[domain.bins.peak.cond1]) * mix.prop
-                     } else {
-                         theta1.est.cond2 <-
-                             global.theta1.cond2 * (1 - mix.prop) +
-                             global.theta1.cond21 * mix.prop
-                         sigma1.est.cond2 <-
-                             global.sigma1.cond2 * (1 - mix.prop) +
-                             global.sigma1.cond21 * mix.prop
-                     }
 
                      # setup variables to calculate likelihood for each isoform
                      domain.val.mat.cond1 <- val.mat.cond1[, bins.gw]
                      domain.val.mat.cond2 <- val.mat.cond2[, bins.gw]
+
+                     domain.val.cond1 <- colMeans(domain.val.mat.cond1)
+                     domain.val.cond2 <- colMeans(domain.val.mat.cond2)
+
+                     theta1.est.cond1 <- theta1.global.cond1
+                     theta1.est.cond2 <- theta1.global.cond2
+                     sigma1.est.cond1 <- sigma1.global.cond1
+                     sigma1.est.cond2 <- sigma1.global.cond2
+
+                     #                      theta1.est.cond1 <- mean(domain.val.cond1[domain.val.cond1 > quantile(domain.val.cond1, 0.7)])
+                     #                      theta1.est.cond2 <- mean(domain.val.cond2[domain.val.cond2 > quantile(domain.val.cond2, 0.7)])
+                     #                      sigma1.est.cond1 <- sd(domain.val.cond1[domain.val.cond1 > quantile(domain.val.cond1, 0.7)])
+                     #                      sigma1.est.cond2 <- sd(domain.val.cond2[domain.val.cond2 > quantile(domain.val.cond2, 0.7)])
 
                      theta1.cond1 <- rep(theta1.est.cond1, length(bins))
                      sigma1.cond1 <- rep(sigma1.est.cond1, length(bins))
@@ -377,17 +373,21 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
                      bg.mean.cond2 <- matrix(rowMeans(val.mat.cond2[, start.bin.gw:end.bin.gw]), length(bam.cond2), length(bins))
                      bg.sd.cond2 <- matrix(rowSds(val.mat.cond2[, start.bin.gw:end.bin.gw]), length(bam.cond2), length(bins))
 
-                     # relative likelihood
+                     # likelihood matrices
                      like.mat.cond1 <- calLikeIso(domain.val.mat.cond1, rep(1, nrow(q))/nrow(q),
                                                   q, bg.mean.cond1, bg.sd.cond1, theta1.cond1, sigma1.cond1)
                      like.mat.cond2 <- calLikeIso(domain.val.mat.cond2, rep(1, nrow(q))/nrow(q),
                                                   q, bg.mean.cond2, bg.sd.cond2, theta1.cond2, sigma1.cond2)
-                     max.iso <- which.max(colSums(like.mat.cond1) + colSums(like.mat.cond2))
-                     like.mat.cond1 <- like.mat.cond1 - like.mat.cond1[, max.iso]
-                     like.mat.cond2 <- like.mat.cond2 - like.mat.cond2[, max.iso]
+
+                     #                      max.iso <- which.max(colSums(like.mat.cond1) + colSums(like.mat.cond2))
+                     #                      like.mat.cond1 <- like.mat.cond1 - like.mat.cond1[, max.iso]
+                     #                      like.mat.cond2 <- like.mat.cond2 - like.mat.cond2[, max.iso]
+
+                     like.mat.cond1 <- like.mat.cond1 - rowMeans(like.mat.cond1)
+                     like.mat.cond2 <- like.mat.cond2 - rowMeans(like.mat.cond2)
                      test.stat <- colMeans(like.mat.cond1) - colMeans(like.mat.cond2)
 
-                     # permute observations to get null distribution
+                     # permute observations to get empirical null
                      null.stat <- matrix(, n.perm, nrow(q))
                      for(i in 1:n.perm){
                          perm.out <- permutate.mat.multi(rbind(domain.val.mat.cond1, domain.val.mat.cond2),
@@ -395,7 +395,8 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
                                                          rbind(bg.sd.cond1, bg.sd.cond2))
                          like.mat <- calLikeIso(perm.out[[1]], rep(1, nrow(q))/nrow(q), q, perm.out[[2]], perm.out[[3]],
                                                 (theta1.cond1 + theta1.cond2)/2, (sigma1.cond1 + sigma1.cond2)/2)
-                         like.mat <- like.mat - like.mat[, max.iso]
+                         like.mat <- like.mat - rowMeans(like.mat)
+                         #                          like.mat <- like.mat - like.mat[, max.iso]
                          null.stat[i, ] <- colMeans(like.mat[1:length(bam.cond1), ]) -
                          colMeans(like.mat[(length(bam.cond1)+1):(length(bam.cond1) + length(bam.cond2)), ])
                      }
@@ -405,8 +406,9 @@ differentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
                      for (k in 1:nrow(q)){
                          pvalue[k] <- empirical.pvalue(null.stat[, k], test.stat[k], "two.sided")
                      }
-                     list(id = domain.id, pvalue = pvalue, null = null.stat, test = test.stat)
-        }, BPPARAM = multicoreParam)
+                     list(id = domain.id, isoform = q.sel, pvalue = pvalue, null = null.stat, test = test.stat)
+}, BPPARAM = multicoreParam)
+
     result
 }
 

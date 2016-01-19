@@ -71,8 +71,14 @@ plotDomain <- function(isot, domain.id, ...){
     rm(mod, envir = .GlobalEnv)
 }
 
+#' Plot the distribution of number of isoforms across domains
+#'
+#' @importFrom ggplot2 qplot
 plotComponents <- function(isot, domain.id = 1:length(isot@domain)){
-        comps <- unlist(lapply(isot@domain.list[domain.id], function(x) x@k))
+    comps <- unlist(lapply(isot@domain.list[domain.id], function(x) {
+                               labels.tab <- table(x@labels)
+                               sum(labels.tab >= 2)
+}))
         qplot(comps)
     }
 

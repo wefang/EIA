@@ -4,6 +4,8 @@ load.chrlen <- function(chrlen.file, bin.width = 50){
     assign("bin.from", c(0, cumsum(bin.counts[1:23])), envir = .GlobalEnv)
 }
 
+#' Make GRanges object for bins.
+#' @importFrom GenomicRanges GRanges
 make.bins.gr <- function(chrlen.file, bin.width){
     load.chrlen(chrlen.file, bin.width)
     range.start <- unlist(lapply(bin.counts[1:23], function(count){
@@ -26,6 +28,8 @@ bin2bp <- function(bin, window = 50){
         (bin - 1) * window + 1
 }
 
+#' Imports narrowPeak files
+#' @importFrom rtracklayer import.bed
 import.narrowPeak <- function(f){
     extraCols.narrowPeak <- c(singnalValue = "numeric", pValue = "numeric",
                               qValue = "numeric", peak = "integer")
@@ -43,9 +47,9 @@ chr2num <- function(c){
     }
 }
 
+#' Convert seqnames to numeric chromosome indices.
+#' chrX mapped to 23; chrM and chrY mapped to NAs
 seq2num <- function(seq){
-    # chrX mapped to 23
-    # chrM and chrY mapped to NA
     # may need to adjust if original levels are not ordered
     if (is.character(seq)) seq <- factor(seq, levels = paste0("chr", c(1:22, "X", "Y", "M")))
     l <- levels(seq)
@@ -83,14 +87,18 @@ list2gw <- function(bins.ls, bin.width = 200){
     unlist(lapply(1:23, function(chr) bins.ls[[chr]] + bin.from[chr]))
 }
 
+#' Convert chromosome bin indices to genome wide bin indices.
+#'
+#' @param chr vector of chr (Rle)
+#' @param bins vector of bins
 chr2gw <- function(chr, bins){
-    # input: vector of chr (Rle) and bins respectively
-    # output: vector of gw bins
     if (!exists("bin.from") | !exists("bin.counts")){
         stop("please load chr.len first")
     }
     # check if chr is numeric
     if (!is.numeric(chr)) chr <- seq2num(chr)
+    chr <- chr[!is.na(chr)]
+    bins <- bins[!is.na(chr)]
     bin.from[chr] + bins
 }
 
@@ -135,72 +143,17 @@ permutate.mat.multi <- function(...){
     return(out)
 }
 
+#' Count reads in bins.
+#' 
+#' @param align GenomicAlignments (link) Object
+#' @importFrom GenomicRanges seqnames  
+#' @useDynLib riso riso_count_bins
 countReads <- function(align, chrlen.file, bin.width, counts = NULL){
     load.chrlen(chrlen.file, bin.width)
     if (is.null(counts)) counts <- numeric(bin.from[24])
     mid <- ceiling((start(align) + end(align)) / 2)
     bin.gw <- chr2gw(seqnames(align), bp2bin(mid, bin.width))
     count_bins(counts, bin.gw)
-}
-
-mix.align <- function(align1, align2, prop, chrlen.file, bin.width){
-    # extract prop from each file and exchange
-    # prop >= 0 <= 0.5
-    # output bin counts for the mixeds align
-
-    load.chrlen(chrlen.file, bin.width)
-    center1 <- ceiling((start(align1) + end(align1)) / 2)
-    center2 <- ceiling((start(align2) + end(align2)) / 2)
-    bin.gw1 <- chr2gw(seqnames(align1), bp2bin(center1, bin.width))
-    bin.gw2 <- chr2gw(seqnames(align2), bp2bin(center2, bin.width))
-
-    xchange1 <- sample(1:length(align1), ceiling(length(align1) * prop), replace = F)
-    xchange2 <- sample(1:length(align2), ceiling(length(align2) * prop), replace = F)
-
-    counts1 <- numeric(bin.from[24])
-    counts2 <- numeric(bin.from[24])
-    counts1 <- count_bins(counts1, bin.gw1[-xchange1])
-    counts1 <- count_bins(counts1, bin.gw2[xchange2])
-    counts2 <- count_bins(counts2, bin.gw2[-xchange2])
-    counts2 <- count_bins(counts2, bin.gw1[xchange1])
-
-    return(list(counts1, counts2))
-}
-
-mix.align.region <- function(align1, align2, region, prop, chrlen.file, bin.width){
-    # extract prop from each file and exchange
-    # prop >= 0 <= 0.5
-    # output bin counts for the mixeds align
-
-    load.chrlen(chrlen.file, bin.width)
-   
-    align1.diff <- findOverlaps(align1, region)
-    align2.diff <- findOverlaps(align2, region)
-    
-    index.diff1 <- unique(queryHits(align1.diff))
-    index.diff2 <- unique(queryHits(align2.diff))
-    xchange.diff1 <- sample(index.diff1, ceiling(length(index.diff1) * prop))
-    xchange.diff2 <- sample(index.diff2, ceiling(length(index.diff2) * prop))
-
-    xchange.other1 <- sample((1:length(align1))[-index.diff1], ceiling((length(align1)-length(index.diff1)) * 0.5))
-    xchange.other2 <- sample((1:length(align2))[-index.diff2], ceiling((length(align2)-length(index.diff2)) * 0.5))
-
-    xchange1 <- union(xchange.diff1, xchange.other1)
-    xchange2 <- union(xchange.diff2, xchange.other2)
-
-    center1 <- ceiling((start(align1) + end(align1)) / 2)
-    center2 <- ceiling((start(align2) + end(align2)) / 2)
-    bin.gw1 <- chr2gw(seqnames(align1), bp2bin(center1, bin.width))
-    bin.gw2 <- chr2gw(seqnames(align2), bp2bin(center2, bin.width))
-
-    counts1 <- numeric(bin.from[24])
-    counts2 <- numeric(bin.from[24])
-    counts1 <- count_bins(counts1, bin.gw1[-xchange1])
-    counts1 <- count_bins(counts1, bin.gw2[xchange2])
-    counts2 <- count_bins(counts2, bin.gw2[-xchange2])
-    counts2 <- count_bins(counts2, bin.gw1[xchange1])
-
-    return(list(counts1, counts2))
 }
 
 #' Convert bam files to bin counts
@@ -219,9 +172,9 @@ bam2bin <- function(bam.file, chrlen.file, bin.width){
 #' @importFrom rtracklayer import.bed
 #' @importFrom tools file_ext
 ta2bin <- function(ta.file, chrlen.file, bin.width){
-    if (file_ext(ta.file) == "gz"){
-        ta.file <- gunzip(ta.file, temporary = T, remove = F)
-    }
+    #     if (file_ext(ta.file) == "gz"){
+    #         ta.file <- gunzip(ta.file, temporary = T, remove = F)
+    #     }
     alignment <- import.bed(ta.file)
     countReads(alignment, chrlen.file, bin.width)
 }
@@ -280,6 +233,8 @@ pca.reduce <- function(mat, pcadim = NULL){
     pca.red
 }
 
+#' wrapper of image (link) that allows plotting NAs
+#' @importFrom RColorBrewer brewer.pal
 image.na <- function(z,  zlim, col = brewer.pal(9,"Blues"), na.color = grey.colors(1, 0.95),
                      outside.below.color='black', outside.above.color='white',
                      rowsep = NULL, colsep = NULL, sepcolor = grey.colors(1, 0.95), sepwidth = 0.02,

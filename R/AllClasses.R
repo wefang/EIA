@@ -51,7 +51,8 @@ setClass("DomainMod",
                    k = "numeric",
                    p = "numeric",
                    q = "matrix",
-                   clust.like = "matrix")
+                   clust.like = "matrix",
+                   labels = "numeric")
          )
 
 setClass("IsoformMod",

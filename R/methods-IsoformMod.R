@@ -6,7 +6,7 @@
 #' @importFrom matrixStats colMaxs 
 #' @importFrom gtools rdirichlet 
 #' @useDynLib riso riso_SearchMode
-findIsoforms <- function(isom, k = 15, pilot.rep = 500, pilot.max.iter = 30, pilot.tol = 0.001){
+findIsoforms <- function(isom, k = 15, pilot.rep = 300, pilot.max.iter = 30, pilot.tol = 0.001){
 
     mat <- isom@mat
     bg.mean <- isom@bg.mean
