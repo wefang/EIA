@@ -4,7 +4,7 @@
 \alias{findIsoforms}
 \title{Main function to run isoform searching algorithm}
 \usage{
-findIsoforms(isom, k = 15, pilot.rep = 500, pilot.max.iter = 30,
+findIsoforms(isom, k = 15, pilot.rep = 300, pilot.max.iter = 30,
   pilot.tol = 0.001)
 }
 \arguments{
