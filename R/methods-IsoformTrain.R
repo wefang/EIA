@@ -332,7 +332,7 @@ runDifferentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
                      
                      # get the q matrix
                      label.tab <- table(apply(dmod@clust.like, 1, which.max))
-                     q.sel <- as.numeric(names(label.tab)[label.tab > 3])
+                     q.sel <- as.numeric(names(label.tab))
                      try({
                          q <- dmod@q[q.sel, (bins.from.bydt[[dt.id]] + 1):bins.from.bydt[[dt.id+1]]]
                      })

@@ -55,6 +55,7 @@ seq2num <- function(seq){
     l <- levels(seq)
     l <- gsub("chr", "", l)
     l[l == "X"] <- "23"
+
     l[l == "Y" | l == "M"] <- NA
     levels(seq) <- l
     as.numeric(seq)
@@ -97,8 +98,8 @@ chr2gw <- function(chr, bins){
     }
     # check if chr is numeric
     if (!is.numeric(chr)) chr <- seq2num(chr)
-    chr <- chr[!is.na(chr)]
     bins <- bins[!is.na(chr)]
+    chr <- chr[!is.na(chr)]
     bin.from[chr] + bins
 }
 
@@ -143,7 +144,7 @@ permutate.mat.multi <- function(...){
     return(out)
 }
 
-#' Count reads in bins.
+#' Count reads in bins from GeonomicAlignments object.
 #' 
 #' @param align GenomicAlignments (link) Object
 #' @importFrom GenomicRanges seqnames  
@@ -346,3 +347,15 @@ calProb <- function(mat, p, q, bg.mean, bg.sd, theta1, sigma1){
 
     return(list(b.prob = b.prob, a.prob = a.prob, loglike = loglike))
 }
+
+gatherPvalues <- function(da.out){
+    do.call(rbind, lapply(da.out, function(out) {
+                              if (class(out) == "try-error" | is.null(out$id)) {
+                                  return(NULL)
+                              } else {
+                                  data.frame(id = out$id,
+                                             isoform = out$isoform,
+                                             pvalue = out$pvalue,
+                                             statistics = out$test)
+                              }
+}))}
