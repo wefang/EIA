@@ -277,8 +277,8 @@ image.na <- function(z,  zlim, col = colorRampPalette(brewer.pal(9,"Blues"))(100
               col = row.side.col, xlab = "", ylab = "", axes = F)
     }
 
-    par(mar = c(2, 2, 2 ,7))
-    image(x = 1:nrow(z), y = 1:ncol(z), z = z[row.ord, col.ord], zlim=zlim, col=col, xlab = "", ylab = "", ...)
+    #     par(mar = c(2, 2, 2 ,7))
+    image(x = 1:nrow(z), y = 1:ncol(z), z = z[row.ord, col.ord, drop = F], zlim=zlim, col=col, xlab = "", ylab = "", ...)
     if (!is.null(row.lab)){
         if (is.null(row.lab.col)) row.lab.col <- rep("black", length(row.lab))
         mtext(row.lab[rev(col.ord)], side = 4, at = length(row.lab):1, las = 1, col = row.lab.col[rev(col.ord)], cex = 0.4)
@@ -301,6 +301,7 @@ image.na <- function(z,  zlim, col = colorRampPalette(brewer.pal(9,"Blues"))(100
             }
         }
     }
+
     if (!is.null(colsep)){
         if (nrow(z) > 1){
             for(csep in colsep){
