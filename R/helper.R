@@ -237,6 +237,8 @@ pca.reduce <- function(mat, pcadim = NULL){
 #' wrapper of image (link) that allows plotting NAs
 #' @importFrom RColorBrewer brewer.pal
 image.na <- function(z,  zlim, col = brewer.pal(9,"Blues"), na.color = grey.colors(1, 0.95),
+                     row.side = NULL, row.side.col = brewer.pal(8, "Dark2"),
+                     row.lab = NULL, row.lab.col = NULL,
                      outside.below.color='black', outside.above.color='white',
                      rowsep = NULL, colsep = NULL, sepcolor = grey.colors(1, 0.95), sepwidth = 0.02,
                      cellnote = F, digit.format = "%0.2f", text.col = "black", ...){
@@ -254,7 +256,24 @@ image.na <- function(z,  zlim, col = brewer.pal(9,"Blues"), na.color = grey.colo
     zlim[2] <- zlim[2] + 2 * zstep
     col <- c(outside.below.color, col[1], col, outside.above.color, na.color)
 
-    image(x = 1:nrow(z), y = 1:ncol(z), z = z, zlim=zlim, col=col, xlab = "", ylab = "", ...)
+    row.ord <- hclust(dist(z))$order
+    col.ord <- hclust(dist(t(z)))$order
+    
+    # side indicator
+    if (!is.null(row.side)) {
+        layout(matrix(1:2, 1), widths = c(1, 9))
+        par(mar = c(2, 2, 2 ,2))
+        image(x = 1, y = 1:length(row.side), z = matrix(row.side[col.ord], 1), zlim = c(1, max(row.side)),
+              col = row.side.col, xlab = "", ylab = "", axes = F)
+    }
+
+    par(mar = c(2, 2, 2 ,7))
+    image(x = 1:nrow(z), y = 1:ncol(z), z = z[row.ord, col.ord], zlim=zlim, col=col, xlab = "", ylab = "", ...)
+    if (!is.null(row.lab)){
+        if (is.null(row.lab.col)) row.lab.col <- rep("black", length(row.lab))
+        mtext(row.lab[rev(col.ord)], side = 4, at = length(row.lab):1, las = 1, col = row.lab.col[rev(col.ord)])
+    }
+
     if (cellnote == T){
         text(x = row(z), y = col(z),
              labels = sprintf(digit.format, c(z)), col = text.col, cex = 0.6)
