@@ -236,9 +236,10 @@ pca.reduce <- function(mat, pcadim = NULL){
 
 #' wrapper of image (link) that allows plotting NAs
 #' @importFrom RColorBrewer brewer.pal
-image.na <- function(z,  zlim, col = brewer.pal(9,"Blues"), na.color = grey.colors(1, 0.95),
+image.na <- function(z,  zlim, col = colorRampPalette(brewer.pal(9,"Blues"))(1000), na.color = grey.colors(1, 0.95),
                      row.side = NULL, row.side.col = brewer.pal(8, "Dark2"),
                      row.lab = NULL, row.lab.col = NULL,
+                     row.clust = F, col.clust = F,
                      outside.below.color='black', outside.above.color='white',
                      rowsep = NULL, colsep = NULL, sepcolor = grey.colors(1, 0.95), sepwidth = 0.02,
                      cellnote = F, digit.format = "%0.2f", text.col = "black", ...){
@@ -255,9 +256,18 @@ image.na <- function(z,  zlim, col = brewer.pal(9,"Blues"), na.color = grey.colo
     zlim[1] <- zlim[1] - 2 * zstep
     zlim[2] <- zlim[2] + 2 * zstep
     col <- c(outside.below.color, col[1], col, outside.above.color, na.color)
+   
+    if (row.clust == T){
+        row.ord <- hclust(dist(z))$order
+    } else {
+        row.ord <- 1:nrow(z)
+    }
 
-    row.ord <- hclust(dist(z))$order
-    col.ord <- hclust(dist(t(z)))$order
+    if (col.clust == T){
+        col.ord <- hclust(dist(t(z)))$order
+    } else {
+        col.ord <- 1:ncol(z)
+    }
     
     # side indicator
     if (!is.null(row.side)) {
@@ -271,7 +281,7 @@ image.na <- function(z,  zlim, col = brewer.pal(9,"Blues"), na.color = grey.colo
     image(x = 1:nrow(z), y = 1:ncol(z), z = z[row.ord, col.ord], zlim=zlim, col=col, xlab = "", ylab = "", ...)
     if (!is.null(row.lab)){
         if (is.null(row.lab.col)) row.lab.col <- rep("black", length(row.lab))
-        mtext(row.lab[rev(col.ord)], side = 4, at = length(row.lab):1, las = 1, col = row.lab.col[rev(col.ord)])
+        mtext(row.lab[rev(col.ord)], side = 4, at = length(row.lab):1, las = 1, col = row.lab.col[rev(col.ord)], cex = 0.4)
     }
 
     if (cellnote == T){
