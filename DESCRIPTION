@@ -22,7 +22,6 @@ Imports:
     tools,
     R.utils,
     matrixStats,
-    DESeq,
     monocle,
     igraph,
     inline
