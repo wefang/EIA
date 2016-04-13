@@ -5,6 +5,7 @@ load.chrlen <- function(chrlen.file, bin.width = 50){
 }
 
 #' Make GRanges object for bins.
+#' @export
 #' @importFrom GenomicRanges GRanges
 make.bins.gr <- function(chrlen.file, bin.width){
     load.chrlen(chrlen.file, bin.width)
@@ -20,10 +21,14 @@ make.bins.gr <- function(chrlen.file, bin.width){
     return(gr)
 }
 
+#' Convert base pair indices to bin indices
+#' @export
 bp2bin <- function(bp, window = 50){
         ceiling(bp / window)
 }
 
+#' Convert bin indices to base pair indices
+#' @export
 bin2bp <- function(bin, window = 50){
         (bin - 1) * window + 1
 }
@@ -218,6 +223,8 @@ empirical.pvalue <- function(null.vec, obs.vec, alternative = c("less", "greater
 	return(pvalue.vec)
 }
 
+#' Wrapper for base \link{prcomp}
+#' @export
 pca.reduce <- function(mat, pcadim = NULL){
     if (is.null(pcadim)){
         sdev <- prcomp(mat)$sdev[1:20]
@@ -235,6 +242,7 @@ pca.reduce <- function(mat, pcadim = NULL){
 }
 
 #' wrapper of image (link) that allows plotting NAs
+#' @export
 #' @importFrom RColorBrewer brewer.pal
 image.na <- function(z,  zlim, col = colorRampPalette(brewer.pal(9,"Blues"))(1000), na.color = grey.colors(1, 0.95),
                      row.side = NULL, row.side.col = brewer.pal(8, "Dark2"),

@@ -10,6 +10,7 @@ newEpiDatatype <- function(name, tab, has.control,
 
 #' Convert alignment files to bin counts (both treatment and control), supports tagAlign and bam for now.
 #'
+#' @export
 #' @param epidt EpiDatatype (need link) object
 #' @importFrom tools file_path_sans_ext
 convert2bin <- function(epidt){
@@ -80,6 +81,7 @@ getSizeFactors <- function(epidt){
 
 #' Generate counts matrix per chromosome. Results are saved as .rds files in data directory.
 #' 
+#' @export
 #' @param epidt EpiDatatype Object
 generateMatrix <- function(epidt){
     datatype <- epidt@name
