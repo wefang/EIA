@@ -4,11 +4,14 @@
 \alias{image.na}
 \title{wrapper of image (link) that allows plotting NAs}
 \usage{
-\method{image}{na}(z, zlim, col = brewer.pal(9, "Blues"),
-  na.color = grey.colors(1, 0.95), outside.below.color = "black",
-  outside.above.color = "white", rowsep = NULL, colsep = NULL,
-  sepcolor = grey.colors(1, 0.95), sepwidth = 0.02, cellnote = F,
-  digit.format = "\%0.2f", text.col = "black", ...)
+\method{image}{na}(z, zlim, col = colorRampPalette(brewer.pal(9,
+  "Blues"))(1000), na.color = grey.colors(1, 0.95), row.side = NULL,
+  row.side.col = brewer.pal(8, "Dark2"), row.lab = NULL,
+  row.lab.col = NULL, row.clust = F, col.clust = F,
+  outside.below.color = "black", outside.above.color = "white",
+  rowsep = NULL, colsep = NULL, sepcolor = grey.colors(1, 0.95),
+  sepwidth = 0.02, cellnote = F, digit.format = "\%0.2f",
+  text.col = "black", ...)
 }
 \description{
 wrapper of image (link) that allows plotting NAs
