@@ -244,11 +244,3 @@ NumericMatrix calLikeIso(NumericMatrix mat, NumericVector p, NumericMatrix q, Nu
     return loglike_mat;
 }
 
-// [[Rcpp::export]]
-NumericVector count_bins(NumericVector counts, NumericVector bins){
-  int i;
-  for (i=0; i<bins.size(); i++){ counts[bins[i] - 1]++; }
-  return counts;
-}
-
-

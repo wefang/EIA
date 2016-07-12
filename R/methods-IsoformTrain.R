@@ -6,6 +6,7 @@ addDatatype <- function(isot, epidt){
 }
 
 #' Setup the domain model
+#' 
 #' @importFrom GenomicRanges start
 #' @importFrom GenomicRanges end
 #' @importFrom GenomicRanges intersect 
@@ -49,6 +50,7 @@ setupDomainModel <- function(isot, chrlen.file, bin.width, mod.dir,
 }
 
 #' generate the model files for fitting
+#' 
 #' @importFrom matrixStats rowSds
 generateModelFile <- function(isot, id = 1:length(isot@domain)){
     if(!dir.exists(isot@mod.dir)) dir.create(isot@mod.dir)
@@ -390,7 +392,7 @@ runDifferentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
                      # permute observations to get empirical null
                      null.stat <- matrix(, n.perm, nrow(q))
                      for(i in 1:n.perm){
-                         perm.out <- permutate.mat.multi(rbind(domain.val.mat.cond1, domain.val.mat.cond2),
+                         perm.out <- perm.mat.multi(rbind(domain.val.mat.cond1, domain.val.mat.cond2),
                                                          rbind(bg.mean.cond1, bg.mean.cond2),
                                                          rbind(bg.sd.cond1, bg.sd.cond2))
                          like.mat <- calLikeIso(perm.out[[1]], rep(1, nrow(q))/nrow(q), q, perm.out[[2]], perm.out[[3]],

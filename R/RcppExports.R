@@ -9,7 +9,3 @@ calLikeIso <- function(mat, p, q, bg_mean, bg_sd, theta1, sigma1) {
     .Call('riso_calLikeIso', PACKAGE = 'riso', mat, p, q, bg_mean, bg_sd, theta1, sigma1)
 }
 
-count_bins <- function(counts, bins) {
-    .Call('riso_count_bins', PACKAGE = 'riso', counts, bins)
-}
-

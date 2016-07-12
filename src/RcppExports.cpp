@@ -43,15 +43,3 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
-// count_bins
-NumericVector count_bins(NumericVector counts, NumericVector bins);
-RcppExport SEXP riso_count_bins(SEXP countsSEXP, SEXP binsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject __result;
-    Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< NumericVector >::type counts(countsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type bins(binsSEXP);
-    __result = Rcpp::wrap(count_bins(counts, bins));
-    return __result;
-END_RCPP
-}

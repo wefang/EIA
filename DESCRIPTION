@@ -22,8 +22,6 @@ Imports:
     tools,
     R.utils,
     matrixStats,
-    monocle,
-    igraph,
     inline
 LinkingTo: Rcpp,
     RcppArmadillo
