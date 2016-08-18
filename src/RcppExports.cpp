@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 // SearchMode
 List SearchMode(NumericMatrix mat, NumericMatrix bg_mean, NumericMatrix bg_sd, int K, int max_iter, double tol, NumericVector p, NumericMatrix q, NumericVector theta1, NumericVector sigma1);
-RcppExport SEXP riso_SearchMode(SEXP matSEXP, SEXP bg_meanSEXP, SEXP bg_sdSEXP, SEXP KSEXP, SEXP max_iterSEXP, SEXP tolSEXP, SEXP pSEXP, SEXP qSEXP, SEXP theta1SEXP, SEXP sigma1SEXP) {
+RcppExport SEXP EIA_SearchMode(SEXP matSEXP, SEXP bg_meanSEXP, SEXP bg_sdSEXP, SEXP KSEXP, SEXP max_iterSEXP, SEXP tolSEXP, SEXP pSEXP, SEXP qSEXP, SEXP theta1SEXP, SEXP sigma1SEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -28,7 +28,7 @@ END_RCPP
 }
 // calLikeIso
 NumericMatrix calLikeIso(NumericMatrix mat, NumericVector p, NumericMatrix q, NumericMatrix bg_mean, NumericMatrix bg_sd, NumericVector theta1, NumericVector sigma1);
-RcppExport SEXP riso_calLikeIso(SEXP matSEXP, SEXP pSEXP, SEXP qSEXP, SEXP bg_meanSEXP, SEXP bg_sdSEXP, SEXP theta1SEXP, SEXP sigma1SEXP) {
+RcppExport SEXP EIA_calLikeIso(SEXP matSEXP, SEXP pSEXP, SEXP qSEXP, SEXP bg_meanSEXP, SEXP bg_sdSEXP, SEXP theta1SEXP, SEXP sigma1SEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;

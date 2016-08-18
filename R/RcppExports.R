@@ -2,10 +2,10 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 SearchMode <- function(mat, bg_mean, bg_sd, K, max_iter, tol, p, q, theta1, sigma1) {
-    .Call('riso_SearchMode', PACKAGE = 'riso', mat, bg_mean, bg_sd, K, max_iter, tol, p, q, theta1, sigma1)
+    .Call('EIA_SearchMode', PACKAGE = 'EIA', mat, bg_mean, bg_sd, K, max_iter, tol, p, q, theta1, sigma1)
 }
 
 calLikeIso <- function(mat, p, q, bg_mean, bg_sd, theta1, sigma1) {
-    .Call('riso_calLikeIso', PACKAGE = 'riso', mat, p, q, bg_mean, bg_sd, theta1, sigma1)
+    .Call('EIA_calLikeIso', PACKAGE = 'EIA', mat, p, q, bg_mean, bg_sd, theta1, sigma1)
 }
 

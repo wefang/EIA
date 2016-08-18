@@ -5,7 +5,7 @@
 #' @param pilot.rep Number of random starting points to begin with
 #' @importFrom matrixStats colMaxs 
 #' @importFrom gtools rdirichlet 
-#' @useDynLib riso riso_SearchMode
+#' @useDynLib EIA EIA_SearchMode
 findIsoforms <- function(isom, k = 15, pilot.rep = 300, pilot.max.iter = 30, pilot.tol = 0.001){
 
     mat <- isom@mat

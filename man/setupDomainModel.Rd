@@ -2,12 +2,11 @@
 % Please edit documentation in R/methods-IsoformTrain.R
 \name{setupDomainModel}
 \alias{setupDomainModel}
-\title{Setup the domain model}
+\title{Setup the domain models}
 \usage{
-setupDomainModel(isot, chrlen.file, bin.width, mod.dir,
-  data.types = isot@data.types)
+setupDomainModel(isot, mod.dir, data.types = isot@data.types)
 }
 \description{
-Setup the domain model
+Setup the domain models
 }
 
