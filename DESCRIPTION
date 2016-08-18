@@ -21,7 +21,7 @@ Imports:
     gtools,
     tools,
     R.utils,
-    matrixStats,
+    matrixStats
 LinkingTo: Rcpp,
     RcppArmadillo
 RoxygenNote: 5.0.1

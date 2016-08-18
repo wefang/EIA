@@ -290,7 +290,7 @@ consolidateModels <- function(isot){
 # #' @importFrom BiocParallel MulticoreParam
 # #' @importFrom BiocParallel bplapply 
 # #' @importFrom matrixStats rowSds
-# #' @useDynLib riso riso_calLikeIso
+# #' @useDynLib EIA EIA_calLikeIso
 # runDifferentialAnalysis <- function(isot, data.type, bam.cond1, bam.cond2,
 #                                     n.perm = 2000, chrlen.file, bin.width, n.cores,
 #                                     id = 1:length(isot@domain)){
