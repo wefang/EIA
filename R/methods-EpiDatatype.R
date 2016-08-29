@@ -2,71 +2,94 @@ newEpiDatatype <- function(name, table,
                            file.type = c("bam", "bed", "tagAlign", "bin"),
                            has.control, data.dir, sig.range, chrlen.file, bin.width, chr.count){
       new("EpiDatatype", name = name,
-          table = table, cells = unique(as.character(tab$cell)),
+          table = table, experiments = unique(as.character(table$experiment)),
           file.type = file.type, has.control = has.control, data.dir = data.dir,
           sig.range = sig.range,
           chrlen.file = chrlen.file, bin.width = bin.width, chr.count = chr.count)
 }
 
 #' Convert alignment files to bin counts (both treatment and control), outputs are binary .bin files, currently supports tagAlign and bam files as inputs.
-#' The normalizing size factors will also be calculated during the conversion.
 #'
 #' @export
 #' @param epidt  A \code{\link{EpiDatatype}} object.
 #' @importFrom tools file_path_sans_ext
+#' @importFrom readr write_tsv
 #' @importFrom ghelper ta2bin bam2bin
-convert2bin <- function(epidt){
+convert2bin <- function(epidt, sample_id = 1:nrow(epidt@table),
+                        result_file = file.path(epidt@data.dir, "conversion_results.tsv")){
       
       # process treatment and control together
-      if (epidt@has.control == FALSE){
-            files <- epidt@table$trt.file
+      if (epidt@has.control){
+            files  <- c(epidt@table$trt.file[sample_id], epidt@table$ctrl.file[sample_id])
+            paired <- c(epidt@table$trt.paired[sample_id], epidt@table$ctrl.paired[sample_id])
       } else {
-            files  <- c(epidt@table$trt.file, epidt@table$ctrl.file)
+            files <- epidt@table$trt.file[sample_id]
+            paired <- epidt@table$trt.paired[sample_id]
       }
       
-      # get library size and size factors when converting
+      # save total counts while converting
       total.counts <- numeric(length(files))
-      out.files <- character(length(files))
+      output.files <- character(length(files))
       
       if (!dir.exists(epidt@data.dir)){
             dir.create(epidt@data.dir)
       }
       
       for (i in 1:length(files)){
-            message(paste("converting file", files[i]))
-            out.files[i] <- file.path(epidt@data.dir, paste0(sub("\\.[[:alnum:]]+$", "", basename(file_path_sans_ext(files[i]))), ".bin"))
-            message(paste("output:", out.files[i]))
+
+            f <- files[i]
+            message(paste("processing", f, ":", i, "of", length(files)))
+            output.files[i] <- file.path(epidt@data.dir,
+                                         paste0(sub("\\.[[:alnum:]]+$", "",
+                                                    basename(file_path_sans_ext(f))), ".bin"))
+            
+            # download if url is given
+            if (startsWith(f, "http")){
+                message("downloading file...")
+                download.file(f, "temp_dl", method = "wget", quiet = T)
+                f <- "temp_dl"
+            }
+
             if (epidt@file.type == "tagAlign"){
-                  temp <- ta2bin(files[i], epidt@chrlen.file, epidt@bin.width)
+                  temp <- ta2bin(f, chrlen.file = epidt@chrlen.file,
+                                  chr.count = epidt@chr.count,
+                                  bin.width = epidt@bin.width)
             }
+
             if (epidt@file.type == "bam"){
-                  temp <- bam2bin(files[i], epidt@chrlen.file, epidt@bin.width)
+                if (paired[i]){
+                  message("sample is paired.")
+                  temp <- bam2bin_paired(f, chrlen.file = epidt@chrlen.file,
+                                  chr.count = epidt@chr.count,
+                                  bin.width = epidt@bin.width)
+                } else {
+                  temp <- bam2bin(f, chrlen.file = epidt@chrlen.file,
+                                  chr.count = epidt@chr.count,
+                                  bin.width = epidt@bin.width)
+                }
             }
+
             if (!epidt@file.type %in% c("bam", "tagAlign")){
                   stop(" Currently only supporting bam .bam and .tagAlign")
             }
-            writeBin(as.integer(temp), out.files[i], size = 4)
+
+            if (file.exists("temp_dl")) file.remove("temp_dl")
+            message(paste("writing output to:", output.files[i]))
+            writeBin(as.integer(temp), output.files[i], size = 4)
             total.counts[i] <- sum(temp)
       }
+    
+      temp_tab <- epidt@table[sample_id, ]
+      temp_tab$trt.total <- total.counts[1:length(sample_id)]
+      temp_tab$trt.bin <- output.files[1:length(sample_id)]
       
-      size.factors <- median(total.counts) / total.counts
-      
-      # for treatment
-      # add a size factor column to the table
-      epidt@table$trt.sf <- size.factors[1:length(epidt@table$trt.file)]
-      # update treatment files with bin files
-      epidt@table$trt.old <- epidt@table$trt.file 
-      epidt@table$trt.file <- out.files[1:length(epidt@table$trt.file)]
-      
-      # repeat for control
-      if (epidt@has.control == T){
-            epidt@table$ctrl.sf <- size.factors[(length(epidt@table$trt.file)+1):length(size.factors)]
-            epidt@table$ctrl.old <- epidt@table$ctrl.file
-            epidt@table$ctrl.file <- out.files[(length(epidt@table$trt.file)+1):length(out.files)]
+      if (epidt@has.control) {
+          temp_tab$ctrl.total <- total.counts[(length(sample_id)+1):length(files)]
+          temp_tab$ctrl.bin <- output.files[(length(sample_id)+1):length(files)]
       }
-      
-      epidt@file.type <- "bin"
-      
+
+      write_tsv(temp_tab, result_file, append = T)
+
       epidt
 }
 
@@ -139,7 +162,7 @@ generateMatrices <- function(epidt){
             message("log2 transforming counts..")
             trt.conv.mat <- log2(trt.counts.mat * tab$trt.sf + 1)
             message("taking average over replicates..")
-            trt.ave.mat <- aveMatFac(trt.conv.mat, tab$cell)
+            trt.ave.mat <- aveMatFac(trt.conv.mat, tab$experiment)
             message(paste("saving matrices to", output.dir))
             saveRDS(trt.counts.mat, file =
                           file.path(output.dir, paste0(datatype, "_trt_counts_chr", chr, ".rds")))
@@ -162,7 +185,7 @@ generateMatrices <- function(epidt){
                   message("log2 transforming counts..")
                   ctrl.conv.mat <- log2(ctrl.counts.mat * tab$ctrl.sf + 1)
                   message("taking average over replicates..")
-                  ctrl.ave.mat <- aveMatFac(ctrl.conv.mat, tab$cell)
+                  ctrl.ave.mat <- aveMatFac(ctrl.conv.mat, tab$experiment)
                   message(paste("saving matrices to", output.dir))
                   saveRDS(ctrl.counts.mat, file =
                                 file.path(output.dir, paste0(datatype, "_ctrl_counts_chr", chr, ".rds")))

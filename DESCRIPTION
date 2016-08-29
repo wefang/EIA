@@ -12,6 +12,7 @@ Imports:
     GenomicAlignments,
     rtracklayer,
     ggplot2,
+    readr,
     dplyr,
     reshape2,
     RColorBrewer,

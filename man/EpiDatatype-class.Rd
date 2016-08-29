@@ -3,18 +3,19 @@
 \docType{class}
 \name{EpiDatatype-class}
 \alias{EpiDatatype-class}
-\title{An epigenomics data type to be added to the analysis.}
+\title{Class for an epigenomics data type to be added to the analysis.}
 \description{
-An epigenomics data type to be added to the analysis.
+Class for an epigenomics data type to be added to the analysis.
 }
 \section{Slots}{
 
 \describe{
 \item{\code{name}}{The name of the epigenomic data type.}
 
-\item{\code{table}}{A data frame with each row corresponding to a sample. Requires cell and trt.file columns, and ctrl.file columns if \code{has.control} is set to \code{TURE}.}
+\item{\code{table}}{A data frame with each row corresponding to a sample. Requires `experiment` and `trt.file` columns.
+If \code{has.control} is \code{TURE}, `ctrl.file` column is required. For .bam file type, a `paired` column is also required.}
 
-\item{\code{cell.types}}{Names of the cell types used for the analysis.}
+\item{\code{experiments}}{Names of the experiments used for the analysis.}
 
 \item{\code{file.type}}{The type of the alignment files, currently supporting .bam and .tagAlign.}
 

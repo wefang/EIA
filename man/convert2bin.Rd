@@ -2,16 +2,15 @@
 % Please edit documentation in R/methods-EpiDatatype.R
 \name{convert2bin}
 \alias{convert2bin}
-\title{Convert alignment files to bin counts (both treatment and control), outputs are binary .bin files, currently supports tagAlign and bam files as inputs.
-The normalizing size factors will also be calculated during the conversion.}
+\title{Convert alignment files to bin counts (both treatment and control), outputs are binary .bin files, currently supports tagAlign and bam files as inputs.}
 \usage{
-convert2bin(epidt)
+convert2bin(epidt, sample_id = 1:nrow(epidt@table),
+  result_file = file.path(epidt@data.dir, "conversion_results.tsv"))
 }
 \arguments{
 \item{epidt}{A \code{\link{EpiDatatype}} object.}
 }
 \description{
 Convert alignment files to bin counts (both treatment and control), outputs are binary .bin files, currently supports tagAlign and bam files as inputs.
-The normalizing size factors will also be calculated during the conversion.
 }
 

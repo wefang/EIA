@@ -1,34 +1,29 @@
-check.epidatatype <- function(object){
+check_EpiDatatype <- function(object){
     errors <- character()
-    if (length(object@has.control) != 1){
-        msg <- paste("has.control should only have length 1")
-        errors <- c(errors, msg)
-        object@has.control <- object@has.control[1]
-    }
-
     tab <- object@table
     # check if the data.frame has the specified columns
     if (object@has.control == TRUE){
-        if (!all(c("cell", "trt.file", "ctrl.file") %in%
+        if (!all(c("experiment", "trt.file", "ctrl.file", "trt.paired", "ctrl.paired") %in%
                 colnames(tab))){
-            msg <- "table is not in the selected format"
+            msg <- "table is not in the required format"
             errors <- c(errors, msg)
         }
     } else {
-        if (!all(c("cell", "trt.file") %in%
+        if (!all(c("experiment", "trt.file", "trt.paired") %in%
                 colnames(tab))){
-            msg <- "table is not in the selected format"
+            msg <- "table is not in the required format"
             errors <- c(errors, msg)
         }
     }
     if (length(errors) == 0) TRUE else errors
 }
 
-#' An epigenomics data type to be added to the analysis.
+#' Class for an epigenomics data type to be added to the analysis.
 #'
 #' @slot name The name of the epigenomic data type.
-#' @slot table A data frame with each row corresponding to a sample. Requires cell and trt.file columns, and ctrl.file columns if \code{has.control} is set to \code{TURE}.
-#' @slot cell.types Names of the cell types used for the analysis.
+#' @slot table A data frame with each row corresponding to a sample. Requires `experiment` and `trt.file` columns.
+#' If \code{has.control} is \code{TURE}, `ctrl.file` column is required. For .bam file type, a `paired` column is also required.
+#' @slot experiments  Names of the experiments used for the analysis.
 #' @slot file.type The type of the alignment files, currently supporting .bam and .tagAlign.
 #' @slot has.control A logical value indicating if the data type has input samples.
 #' @slot data.dir The directory of data files
@@ -40,7 +35,7 @@ check.epidatatype <- function(object){
 setClass("EpiDatatype",
          slots = c(name = "character",
                    table = "data.frame",
-                   cells = "character",
+                   experiments = "character",
                    file.type = "character",
                    has.control = "logical",
                    data.dir = "character",
@@ -48,7 +43,7 @@ setClass("EpiDatatype",
                    bin.width = "numeric",
                    chrlen.file = "character",
                    chr.count = "numeric"),
-         validity = check.epidatatype
+         validity = check_EpiDatatype
          )
 
 setClass("DomainMod",
@@ -128,4 +123,3 @@ setMethod("show", "IsoformTrain", function(object){
     cat("model directory:\n")
     print(object@mod.dir)
 })
-
