@@ -2,11 +2,11 @@
 % Please edit documentation in R/methods-IsoformTrain.R
 \name{generateModelFile}
 \alias{generateModelFile}
-\title{generate the model files for fitting}
+\title{Generate the model files for fitting}
 \usage{
 generateModelFile(isot, id = 1:length(isot@domain))
 }
 \description{
-generate the model files for fitting
+Generate the model files for fitting
 }
 

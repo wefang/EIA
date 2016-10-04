@@ -13,7 +13,7 @@ Class for an epigenomics data type to be added to the analysis.
 \item{\code{name}}{The name of the epigenomic data type.}
 
 \item{\code{table}}{A data frame with each row corresponding to a sample. Requires `experiment` and `trt.file` columns.
-If \code{has.control} is \code{TURE}, `ctrl.file` column is required. For .bam file type, a `paired` column is also required.}
+If \code{has.control} is \code{TURE}, `ctrl.file` column is required..}
 
 \item{\code{experiments}}{Names of the experiments used for the analysis.}
 

@@ -1,3 +1,6 @@
+#' Constructor for \code{\link{EpiDatatype-class}}
+#'
+#' @export
 newEpiDatatype <- function(name, table,
                            file.type = c("bam", "bed", "tagAlign", "bin"),
                            has.control, data.dir, sig.range, chrlen.file, bin.width, chr.count){
@@ -12,24 +15,28 @@ newEpiDatatype <- function(name, table,
 #'
 #' @export
 #' @param epidt  A \code{\link{EpiDatatype}} object.
+#' @param sample_id The indices of samples (row ids in the table).
+#' @param result_file A text file to save results of conversion.
+#' @param yield_size The number of records of the bam file to read in at once.
 #' @importFrom tools file_path_sans_ext
 #' @importFrom readr write_tsv
 #' @importFrom ghelper ta2bin bam2bin
+#' @importFrom Rsamtools BamFile testPairedEndBam 
 convert2bin <- function(epidt, sample_id = 1:nrow(epidt@table),
-                        result_file = file.path(epidt@data.dir, "conversion_results.tsv")){
+                        result_file = file.path(epidt@data.dir, "conversion_results.tsv"),
+                        yield_size = NA_integer_){
       
       # process treatment and control together
       if (epidt@has.control){
             files  <- c(epidt@table$trt.file[sample_id], epidt@table$ctrl.file[sample_id])
-            paired <- c(epidt@table$trt.paired[sample_id], epidt@table$ctrl.paired[sample_id])
       } else {
             files <- epidt@table$trt.file[sample_id]
-            paired <- epidt@table$trt.paired[sample_id]
       }
       
       # save total counts while converting
       total.counts <- numeric(length(files))
       output.files <- character(length(files))
+      is.paired <- logical(length(files))
       
       if (!dir.exists(epidt@data.dir)){
             dir.create(epidt@data.dir)
@@ -43,11 +50,20 @@ convert2bin <- function(epidt, sample_id = 1:nrow(epidt@table),
                                          paste0(sub("\\.[[:alnum:]]+$", "",
                                                     basename(file_path_sans_ext(f))), ".bin"))
             
+            # for when file is already processed
+            if (file.exists(output.files[i])){
+                message("file already converted.")
+                temp <- readBin(output.files[i], integer(), 1e8, size = 4)
+                total.counts[i] <- sum(temp)
+                next
+            }
+            
             # download if url is given
             if (startsWith(f, "http")){
                 message("downloading file...")
-                download.file(f, "temp_dl", method = "wget", quiet = T)
-                f <- "temp_dl"
+                temp_dl <- tempfile("dl_", epidt@data.dir)
+                download.file(f, temp_dl, method = "wget", quiet = T)
+                f <- temp_dl
             }
 
             if (epidt@file.type == "tagAlign"){
@@ -57,23 +73,24 @@ convert2bin <- function(epidt, sample_id = 1:nrow(epidt@table),
             }
 
             if (epidt@file.type == "bam"){
-                if (paired[i]){
-                  message("sample is paired.")
-                  temp <- bam2bin_paired(f, chrlen.file = epidt@chrlen.file,
-                                  chr.count = epidt@chr.count,
-                                  bin.width = epidt@bin.width)
-                } else {
-                  temp <- bam2bin(f, chrlen.file = epidt@chrlen.file,
-                                  chr.count = epidt@chr.count,
-                                  bin.width = epidt@bin.width)
+
+                b <- BamFile(f)
+                if (testPairedEndBam(b)){
+                    message("sample is paired.")
+                    is.paired[i] <- T
                 }
+                temp <- bam2bin(f, chrlen.file = epidt@chrlen.file,
+                                chr.count = epidt@chr.count,
+                                bin.width = epidt@bin.width,
+                                paired = is.paired[i],
+                                yieldSize = yield_size)
             }
 
             if (!epidt@file.type %in% c("bam", "tagAlign")){
-                  stop(" Currently only supporting bam .bam and .tagAlign")
+                  stop("Currently only supporting bam .bam and .tagAlign")
             }
 
-            if (file.exists("temp_dl")) file.remove("temp_dl")
+            file.remove(temp_dl)
             message(paste("writing output to:", output.files[i]))
             writeBin(as.integer(temp), output.files[i], size = 4)
             total.counts[i] <- sum(temp)
@@ -82,10 +99,12 @@ convert2bin <- function(epidt, sample_id = 1:nrow(epidt@table),
       temp_tab <- epidt@table[sample_id, ]
       temp_tab$trt.total <- total.counts[1:length(sample_id)]
       temp_tab$trt.bin <- output.files[1:length(sample_id)]
+      temp_tab$trt.paired <- is.paired[1:length(sample_id)]
       
       if (epidt@has.control) {
           temp_tab$ctrl.total <- total.counts[(length(sample_id)+1):length(files)]
           temp_tab$ctrl.bin <- output.files[(length(sample_id)+1):length(files)]
+          temp_tab$ctrl.paired <- is.paired[(length(sample_id)+1):length(files)]
       }
 
       write_tsv(temp_tab, result_file, append = T)
@@ -93,13 +112,34 @@ convert2bin <- function(epidt, sample_id = 1:nrow(epidt@table),
       epidt
 }
 
+#' Read the result from conversion to bin counts and calculate size factors for samples
+#' 
+#' @importFrom readr read_tsv
+#' @param epidt  A \code{\link{EpiDatatype-class}} object.
+getConversionResult <- function(epidt, result_file = file.path(epidt@data.dir, "conversion_results.tsv")) {
+    cnames <- c(colnames(epidt@table), "trt.total", "trt.bin", "trt.paired")
+    if (epidt@has.control) {
+        cnames <- c(cnames, "ctrl.total", "ctrl.bin", "ctrl.paired")
+    }
+    result <- read_tsv(result_file, col_names = cnames)
+
+    tab <- merge(epidt@table, result, by = colnames(epidt@table), all.x = T)
+
+    if (epidt@has.control) {
+        total <- c(tab$trt.total, tab$ctrl.total)
+        tab$trt.sf <- median(total) / tab$trt.total
+        tab$ctrl.sf <- median(total) / tab$ctrl.total
+    } else {
+        tab$trt.sf <- median(tab$trt.total) / tab$trt.total 
+    }
+    epidt@table <- tab
+    epidt
+}
+
 #' Only used when file type given is binary bin counts already, otherwise, use \code{\link{convert2bin}} will calculate the size factors.
 #' 
 #' @param epidt  A \code{\link{EpiDatatype}} object.
 getSizeFactors <- function(epidt){
-      if (epidt@file.type != "bin") {
-            stop("input type is not bin.")
-      }
       
       if (epidt@has.control == FALSE){
             files <- epidt@table$trt.file
@@ -132,10 +172,6 @@ getSizeFactors <- function(epidt){
 #' 
 generateMatrices <- function(epidt){
       
-      if (epidt@file.type != "bin") {
-            stop("files are not converted to .bin files yet.")
-      }
-      
       datatype <- epidt@name
       tab <- epidt@table
       output.dir <- epidt@data.dir
@@ -145,7 +181,6 @@ generateMatrices <- function(epidt){
       }
       
       load.chrlen(epidt@chrlen.file, epidt@bin.width)
-      
       
       for (chr in 1:epidt@chr.count){
             message(paste("starting chromosome", chr, " of ", epidt$chr.count, "."))

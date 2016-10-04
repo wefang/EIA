@@ -3,13 +3,13 @@ check_EpiDatatype <- function(object){
     tab <- object@table
     # check if the data.frame has the specified columns
     if (object@has.control == TRUE){
-        if (!all(c("experiment", "trt.file", "ctrl.file", "trt.paired", "ctrl.paired") %in%
+        if (!all(c("experiment", "trt.file", "ctrl.file") %in%
                 colnames(tab))){
             msg <- "table is not in the required format"
             errors <- c(errors, msg)
         }
     } else {
-        if (!all(c("experiment", "trt.file", "trt.paired") %in%
+        if (!all(c("experiment", "trt.file") %in%
                 colnames(tab))){
             msg <- "table is not in the required format"
             errors <- c(errors, msg)
@@ -22,7 +22,7 @@ check_EpiDatatype <- function(object){
 #'
 #' @slot name The name of the epigenomic data type.
 #' @slot table A data frame with each row corresponding to a sample. Requires `experiment` and `trt.file` columns.
-#' If \code{has.control} is \code{TURE}, `ctrl.file` column is required. For .bam file type, a `paired` column is also required.
+#' If \code{has.control} is \code{TURE}, `ctrl.file` column is required..
 #' @slot experiments  Names of the experiments used for the analysis.
 #' @slot file.type The type of the alignment files, currently supporting .bam and .tagAlign.
 #' @slot has.control A logical value indicating if the data type has input samples.

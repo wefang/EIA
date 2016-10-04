@@ -4,14 +4,12 @@
 \alias{consolidateModels}
 \title{Copy results from the model file to the main object.}
 \usage{
-consolidateModels(isot)
+consolidateModels(isot, id = 1:length(isot@domain))
+}
+\arguments{
+\item{isot}{An \code{\link{IsoformTrain}} object.}
 }
 \description{
 Copy results from the model file to the main object.
 }
-\section{Slots}{
-
-\describe{
-\item{\code{isot}}{An \code{\link{IsoformTrain}} object.}
-}}
 

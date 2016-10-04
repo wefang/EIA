@@ -5,10 +5,17 @@
 \title{Convert alignment files to bin counts (both treatment and control), outputs are binary .bin files, currently supports tagAlign and bam files as inputs.}
 \usage{
 convert2bin(epidt, sample_id = 1:nrow(epidt@table),
-  result_file = file.path(epidt@data.dir, "conversion_results.tsv"))
+  result_file = file.path(epidt@data.dir, "conversion_results.tsv"),
+  yield_size = NA_integer_)
 }
 \arguments{
 \item{epidt}{A \code{\link{EpiDatatype}} object.}
+
+\item{sample_id}{The indices of samples (row ids in the table).}
+
+\item{result_file}{A text file to save results of conversion.}
+
+\item{yield_size}{The number of records of the bam file to read in at once.}
 }
 \description{
 Convert alignment files to bin counts (both treatment and control), outputs are binary .bin files, currently supports tagAlign and bam files as inputs.

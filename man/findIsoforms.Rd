@@ -4,11 +4,11 @@
 \alias{findIsoforms}
 \title{Main function to run isoform searching algorithm}
 \usage{
-findIsoforms(isom, k = 15, pilot.rep = 300, pilot.max.iter = 30,
-  pilot.tol = 0.001)
+findIsoforms(isom, k, pilot.rep, pilot.max.iter, pilot.tol, max.iter, tol,
+  n.cores = 1)
 }
 \arguments{
-\item{isom}{IsoformMod object}
+\item{isom}{\code{\link{IsoformMod-class}} object}
 
 \item{k}{Number of isoforms to start with}
 

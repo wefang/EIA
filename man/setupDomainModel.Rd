@@ -4,7 +4,7 @@
 \alias{setupDomainModel}
 \title{Setup the domain models}
 \usage{
-setupDomainModel(isot, mod.dir, data.types = isot@data.types)
+setupDomainModel(isot, data.types = isot@data.types)
 }
 \description{
 Setup the domain models

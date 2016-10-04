@@ -244,3 +244,93 @@ NumericMatrix calLikeIso(NumericMatrix mat, NumericVector p, NumericMatrix q, Nu
     return loglike_mat;
 }
 
+
+// [[Rcpp::export]]
+List calPostProb(NumericMatrix mat, NumericVector p, NumericMatrix q, NumericMatrix bg_mean, NumericMatrix bg_sd,
+        NumericVector theta1, NumericVector sigma1){
+
+    int I = mat.nrow(), J = mat.ncol(), K = q.nrow();
+
+    NumericMatrix like1(I, J);
+    NumericMatrix like0(I, J);
+    arma::cube temp_like_sum(I, J, K);
+    arma::cube temp_like_ratio(I, J, K);
+    NumericMatrix clust_like(I, K);
+    arma::cube cond_like(I, J, K);
+    NumericVector all_like(I);
+
+    NumericVector temp(K);
+    double temp_max, m, s, d1, d2;
+    double loglike;
+    NumericVector b_prob(K);
+    NumericMatrix a_prob(I, J);
+
+    for (int i=0; i < I; i++){
+        for (int j=0; j < J; j++){
+            like0(i, j) = R::dnorm(mat(i, j), bg_mean(i, j), bg_sd(i, j), FALSE);
+            like1(i, j) = R::dnorm(mat(i, j), theta1[j], sigma1[j], FALSE);
+        }
+    }
+
+    for (int i = 0; i < I; i++){
+        for (int j = 0; j < J; j++){
+            for (int k = 0; k < K; k++){
+                d1 = q(k, j) * like1(i, j);
+                d2 = (1 - q(k, j)) * like0(i, j);
+                temp_like_sum(i, j, k) = d1 + d2;
+                temp_like_ratio(i, j, k) = d1 / (d1 + d2);
+            }
+        }
+    }
+
+    for (int k = 0; k < K; k++){
+        for (int i = 0; i < I; i++){
+            s = 0;
+            for (int j = 0; j < J; j++){
+                if (!R_IsNA(temp_like_sum(i, j, k))){
+                    s += log(temp_like_sum(i, j, k));
+                }
+            }
+            clust_like(i, k) = log(p[k]) + s;
+        }
+    }
+
+    for (int i = 0; i < I; i++){
+        temp = clust_like(i, _);
+        temp_max = max(temp);
+        temp = clone(temp) - temp_max;
+        temp = exp(temp);
+        clust_like(i, _) = temp / sum(temp);
+    }
+
+    for (int i = 0; i < I; i++){
+        for (int j = 0; j < J; j++){
+            for (int k = 0; k < K; k++){
+                cond_like(i ,j, k) = temp_like_ratio(i, j, k) * clust_like(i, k);
+            }
+        }
+    }
+
+    for (int k =0; k < K; k++){
+        b_prob[k] = sum(clust_like(_, k)) / I;
+    }
+
+    for (int i = 0; i < I; i++){
+        for (int j = 0; j < J; j++){
+            s = 0;
+            for (int k = 0; k < K; k++){
+                if (!R_IsNA(cond_like(i, j, k))){
+                    s += cond_like(i, j, k);
+                }
+            }
+            a_prob(i, j) = s;
+        }
+    }
+
+    return List::create(
+            Rcpp::Named("a.prob") = a_prob,
+            Rcpp::Named("b.prob") = b_prob
+            );
+
+}
+

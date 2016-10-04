@@ -10,6 +10,8 @@ LazyData: false
 Imports:
     GenomicRanges,
     GenomicAlignments,
+    Rsamtools,
+    BiocParallel,
     rtracklayer,
     ggplot2,
     readr,

@@ -23,7 +23,7 @@
 #             for (j in 1:J){
 #                 temp.like.sum[i, j, k] <- q[k, j] * like1[i, j] + (1 - q[k, j]) * like0[i, j]
 #                 temp.like.ratio[i, j, k] <- q[k, j] * like1[i, j] /
-#                 ( q[k, j] * like1[i, j] + (1 - q[k, j]) * like0[i, j] )
+#                     ( q[k, j] * like1[i, j] + (1 - q[k, j]) * like0[i, j] )
 #             }
 #         }
 #     }
@@ -61,15 +61,16 @@
 # 
 #     return(list(b.prob = b.prob, a.prob = a.prob, loglike = loglike))
 # }
-# 
-# gatherPvalues <- function(da.out){
-#     do.call(rbind, lapply(da.out, function(out) {
-#                               if (class(out) == "try-error" | is.null(out$id)) {
-#                                   return(NULL)
-#                               } else {
-#                                   data.frame(id = out$id,
-#                                              isoform = out$isoform,
-#                                              pvalue = out$pvalue,
-#                                              statistics = out$test)
-#                               }
-# }))}
+
+    # 
+    # gatherPvalues <- function(da.out){
+    #     do.call(rbind, lapply(da.out, function(out) {
+    #                               if (class(out) == "try-error" | is.null(out$id)) {
+    #                                   return(NULL)
+    #                               } else {
+    #                                   data.frame(id = out$id,
+    #                                              isoform = out$isoform,
+    #                                              pvalue = out$pvalue,
+    #                                              statistics = out$test)
+    #                               }
+    # }))}
