@@ -235,6 +235,7 @@ predictSignal <- function(isot, id, bin.files, peaks, data.type = isot@data.type
 
 #' Get the matrix of relative log likelihood for domains.
 #'
+#' @export
 #' @useDynLib EIA EIA_calLikeIso
 getLikelihoodMatrix <- function(isot, id){
     like.mat.rel.list <- list()
@@ -261,3 +262,139 @@ getLikelihoodMatrix <- function(isot, id){
     like.mat.rel.scale <- scale(like.mat.rel, center = T)
     like.mat.rel.scale
 }
+
+#' Run differential analysis for two treatment conditions (in parallel)
+#'
+#' @export
+#' @importFrom BiocParallel MulticoreParam
+#' @importFrom BiocParallel bplapply 
+#' @importFrom matrixStats rowSds colSds
+#' @importFrom ghelper bam2bin
+#' @useDynLib EIA EIA_calLikeIso
+runDifferentialAnalysis <- function(isot, id, data.type, bam.cond1, bam.cond2, n.perm = 2000,  n.cores) {
+    multicoreParam <- MulticoreParam(workers = n.cores)
+
+    signal_pct_global <- 0.98
+    signal_pct_domain <- 0.85
+   
+    # count matrix gw
+    load.chrlen(isot@chrlen.file, isot@bin.width)
+    n1 <- length(bam.cond1)
+    n2 <- length(bam.cond2)
+
+    if (n1 != n2) stop("don't know how to mix unequal replicates")
+    counts1 <- matrix(, n1, bin.from[24])
+    counts2 <- matrix(, n2, bin.from[24])
+    for (i in 1:n1){
+        counts1[i, ] <- bam2bin(bam.cond1[i], isot@chrlen.file, isot@chr.count, isot@bin.width) 
+        counts2[i, ] <- bam2bin(bam.cond2[i], isot@chrlen.file, isot@chr.count, isot@bin.width)
+    }
+
+    # convert matrix
+    total1 <- rowSums(counts1)
+    total2 <- rowSums(counts2)
+    sf1 <- median(c(total1, total2)) / total1
+    sf2 <- median(c(total1, total2)) / total2
+    val1 <- log2(counts1 * sf1 + 1)
+    val2 <- log2(counts2 * sf2 + 1)
+
+    # average over replicates
+    val1ave <- colMeans(val1)
+    val2ave <- colMeans(val2)
+
+    #     thres1 <- quantile(val1ave, signal_pct_global)
+    #     thres2 <- quantile(val2ave, signal_pct_global)
+    #     theta1.global1 <- mean(val1ave[val1ave > thres1])
+    #     theta1.global2 <- mean(val2[val2ave > thres2])
+    #     sigma1.global1 <- sd(val1ave[val1ave > thres1])
+    #     sigma1.global2 <- sd(val2ave[val2ave > thres2])
+
+    result <-
+        bplapply(1:length(id), function(i){
+                     domain.id <- id[i]
+                     message(paste0("domain ", domain.id))
+
+                     dmod <- isot@domain.list[[domain.id]]
+                     if (is.null(dmod@q)){
+                         warning("no model found!")
+                         return(NA)
+                     }
+
+                     chr.num <- seq2num(dmod@chr)
+                     bins.d <- lapply(dmod@element.list, function(x) x$bins)
+                     bins.counts.d <- unlist(lapply(bins.d, length))
+                     bins.from.d <- c(0, cumsum(bins.counts.d))
+                     dt.id <- which(names(bins.counts.d) == data.type)
+
+                     bins <- bins.d[[data.type]]
+
+                     q.sel <- sort(unique(apply(dmod@clust.like, 1, which.max)))
+                     q <- dmod@q[q.sel, (bins.from.d[[dt.id]] + 1):bins.from.d[[dt.id+1]]]
+
+                     bins.gw <- chr2gw(rep(chr.num, length(bins)), bins)
+                     start.bin.gw <- chr2gw(chr.num, dmod@start.bin)
+                     end.bin.gw <- chr2gw(chr.num, dmod@end.bin)
+
+                     # setup variables to calculate likelihood for each isoform
+                     val1.domain <- val1[, bins.gw]
+                     val2.domain <- val2[, bins.gw]
+
+                     val1ave.domain <- val1ave[bins.gw]
+                     val2ave.domain <- val2ave[bins.gw]
+
+                     #                      theta1.est1 <- theta1.global1
+                     #                      theta1.est2 <- theta1.global2
+                     #                      sigma1.est1 <- sigma1.global1
+                     #                      sigma1.est2 <- sigma1.global2
+
+                     theta1.est1 <- mean(val1ave.domain[val1ave.domain > quantile(val1ave.domain, signal_pct_domain)])
+                     theta1.est2 <- mean(val2ave.domain[val2ave.domain > quantile(val2ave.domain, signal_pct_domain)])
+                     sigma1.est1 <- sd(val1ave.domain[val1ave.domain > quantile(val1ave.domain, signal_pct_domain)])
+                     sigma1.est2 <- sd(val2ave.domain[val2ave.domain > quantile(val2ave.domain, signal_pct_domain)])
+
+                     theta11 <- rep(theta1.est1, length(bins))
+                     sigma11 <- rep(sigma1.est1, length(bins))
+                     bg.mean1 <- matrix(rowMeans(val1[, start.bin.gw:end.bin.gw]), n1, length(bins))
+                     bg.sd1 <- matrix(rowSds(val1[, start.bin.gw:end.bin.gw]), n1, length(bins))
+
+                     theta12 <- rep(theta1.est2, length(bins))
+                     sigma12 <- rep(sigma1.est2, length(bins))
+                     bg.mean2 <- matrix(rowMeans(val2[, start.bin.gw:end.bin.gw]), n2, length(bins))
+                     bg.sd2 <- matrix(rowSds(val2[, start.bin.gw:end.bin.gw]), n2, length(bins))
+
+                     # likelihood matrices
+                     p <- rep(1, nrow(q)) / nrow(q)
+                     like1 <- calLikeIso(val1.domain, p, q, bg.mean1, bg.sd1, theta11, sigma11)
+                     like2 <- calLikeIso(val2.domain, p, q, bg.mean2, bg.sd2, theta12, sigma12)
+
+                     max.iso <- which.max(colSums(like1) + colSums(like2))
+                     like1 <- like1 - like1[, max.iso]
+                     like2 <- like2 - like2[, max.iso]
+                     test.stat <- colMeans(like1) - colMeans(like2)
+
+                     # permute observations to get empirical null
+                     null.stat <- matrix(, n.perm, nrow(q))
+                     for (i in 1:n.perm) {
+                         perm.out <- perm.mat.multi(rbind(val1.domain, val2.domain),
+                                                    rbind(bg.mean1, bg.mean2),
+                                                    rbind(bg.sd1, bg.sd2))
+                         like.mat <- calLikeIso(perm.out[[1]], p, q, perm.out[[2]], perm.out[[3]],
+                                                (theta11 + theta12) / 2, (sigma11 + sigma12) / 2)
+                         like.mat <- like.mat - like.mat[, max.iso]
+                         null.stat[i, ] <- colMeans(like.mat[1:n1, ]) - colMeans(like.mat[(n1 + 1):(n1 + n2), ])
+                     }
+
+                     # calculate empirical p values
+                     pvalue <- numeric(nrow(q))
+                     for (k in 1:nrow(q)){
+                         pvalue[k] <- empirical.pvalue(null.stat[, k], test.stat[k], "two.sided")
+                     }
+
+                     out <- data.frame(domain = domain.id, isoform = q.sel, test_stat = test.stat,
+                                       null_mean = colMeans(null.stat), null_sd = colSds(null.stat),
+                                       pvalue = pvalue)
+                     out[-max.iso, ]
+}, BPPARAM = multicoreParam)
+    do.call(rbind, result)
+}
+

@@ -2,6 +2,7 @@
 
 export(convert2bin)
 export(generateMatrices)
+export(getLikelihoodMatrix)
 export(newEpiDatatype)
 export(runDifferentialAnalysis)
 importFrom(BiocParallel,MulticoreParam)
