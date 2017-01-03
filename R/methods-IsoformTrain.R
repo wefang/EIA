@@ -19,7 +19,7 @@ addEpiDatatype <- function(isot, epidt){
 #' @importFrom ghelper make.bins.gr bp2bin
 setupDomainModel <- function(isot, data.types = isot@data.types){
       
-      bins.gr <- make.bins.gr(isot@chrlen.file, isot@bin.width)
+      bins.gr <- make.bins.gr(isot@chrlen.file, isot@bin.width, isot@chr.count)
       for (domain.id in 1:length(domain)){
             message(paste("processing", domain.id, "of", length(domain)))
             d <- isot@domain[domain.id]
@@ -240,7 +240,8 @@ getLikelihoodMatrix <- function(isot, id){
     like.mat.rel.list <- list()
     for (i in id) {
         load(isot@domain.list[[i]]@mod.file)
-        if (is.null(mod@q)) {
+        if (dim(mod@q)[1] == 0 | is.null(mod@q)) {
+            warning(paste("no results for domain", i))
             next
         }
 
@@ -248,10 +249,10 @@ getLikelihoodMatrix <- function(isot, id){
         q.sel <- as.numeric(names(label.tab))
 
         like.mat <- calLikeIso(mod@mat, mod@p, mod@q[q.sel, , drop = F], mod@bg.mean, mod@bg.sd, mod@theta1, mod@sigma1)
-        max.iso <- which.max(colSums(like.mat)) 
+        max.iso <- which.max(colSums(like.mat))
 
         like.mat.rel  <- like.mat - like.mat[, max.iso] 
-        colnames(like.mat.rel) <- paste0("domain_", as.character(i), "_isoform_", q.sel)
+        colnames(like.mat.rel) <- paste0("domain_", i, "_isoform_", q.sel)
 
         like.mat.rel.list[[i]] <- like.mat.rel[, -max.iso, drop = F]
     }
