@@ -1,8 +1,14 @@
+#' Constructor for IsoformTrain
+#' 
+#' @export
 newIsoformTrain <- function(name, domain, mod.dir, chrlen.file, chr.count, bin.width){
     new("IsoformTrain", name = name, domain = domain, mod.dir = mod.dir,
         chrlen.file = chrlen.file, chr.count = chr.count, bin.width = bin.width)
 }
 
+#' Add EpiDatatype to IsoformTrain
+#' 
+#' @export
 addEpiDatatype <- function(isot, epidt){
       if (!is(epidt, "EpiDatatype")) stop("Please only add EpiDatatype objects")
       if (epidt@bin.width != isot@bin.width | epidt@chrlen.file != isot@chrlen.file | isot@chr.count != epidt@chr.count){
@@ -15,6 +21,7 @@ addEpiDatatype <- function(isot, epidt){
 
 #' Setup the domain models
 #' 
+#' @export
 #' @importFrom GenomicRanges start end intersect seqnames findOverlaps
 #' @importFrom ghelper make.bins.gr bp2bin
 setupDomainModel <- function(isot, data.types = isot@data.types){
@@ -51,6 +58,7 @@ setupDomainModel <- function(isot, data.types = isot@data.types){
 
 #' Generate the model files for fitting
 #' 
+#' @export
 #' @importFrom matrixStats rowSds
 #' @importFrom ghelper seq2num aveMatFac chr2gw load.chrlen
 generateModelFile <- function(isot, id = 1:length(isot@domain)){
@@ -124,9 +132,10 @@ generateModelFile <- function(isot, id = 1:length(isot@domain)){
 }
 
 #' Run model fit for a selected set of domains
+#'
+#' @export
 #' @slot isot An \code{\link{IsoformTrain}} object.
 #' @slot domain.id A vector of the indices of domains to run model fit.
-#' 
 runModelFit <- function(isot, domain.id, ...){
     for (id in domain.id){
         mod.file <- isot@domain.list[[id]]@mod.file
@@ -140,8 +149,9 @@ runModelFit <- function(isot, domain.id, ...){
 }
 
 #' Copy results from the model file to the main object.
+#'
+#' @export
 #' @param isot An \code{\link{IsoformTrain}} object.
-#' 
 consolidateModels <- function(isot, id = 1:length(isot@domain)){
     for (i in id) {
         mod.file <- isot@domain.list[[i]]@mod.file
@@ -157,6 +167,7 @@ consolidateModels <- function(isot, id = 1:length(isot@domain)){
 
 #' Predict probability of a high signal using isoform prior.
 #'
+#' @export
 #' @importFrom ghelper load.chrlen make.bins.gr seq2num chr2gw bin2bp
 #' @importFrom GenomicRanges findOverlaps
 #' @importFrom S4Vectors queryHits
