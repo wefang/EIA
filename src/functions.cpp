@@ -244,7 +244,6 @@ NumericMatrix calLikeIso(NumericMatrix mat, NumericVector p, NumericMatrix q, Nu
     return loglike_mat;
 }
 
-
 // [[Rcpp::export]]
 List calPostProb(NumericMatrix mat, NumericVector p, NumericMatrix q, NumericMatrix bg_mean, NumericMatrix bg_sd,
         NumericVector theta1, NumericVector sigma1){
@@ -333,4 +332,3 @@ List calPostProb(NumericMatrix mat, NumericVector p, NumericMatrix q, NumericMat
             );
 
 }
-
