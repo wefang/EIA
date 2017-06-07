@@ -20,4 +20,3 @@ convert2bin(epidt, sample_id = 1:nrow(epidt@table),
 \description{
 Convert alignment files to bin counts (both treatment and control), outputs are binary .bin files, currently supports tagAlign and bam files as inputs.
 }
-

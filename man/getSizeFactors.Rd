@@ -12,4 +12,3 @@ getSizeFactors(epidt)
 \description{
 Only used when file type given is binary bin counts already, otherwise, use \code{\link{convert2bin}} will calculate the size factors.
 }
-

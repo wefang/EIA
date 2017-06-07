@@ -9,4 +9,3 @@ generateModelFile(isot, id = 1:length(isot@domain))
 \description{
 Generate the model files for fitting
 }
-

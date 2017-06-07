@@ -60,3 +60,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// run_em
+List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericMatrix bg_sd, int K, int max_iter, double tol, int num_threads, NumericVector p, NumericMatrix q, NumericVector theta1, NumericVector sigma1, NumericVector theta1_0, NumericVector sigma1_0, double nu_0);
+RcppExport SEXP EIA_run_em(SEXP matSEXP, SEXP bg_meanSEXP, SEXP bg_sdSEXP, SEXP KSEXP, SEXP max_iterSEXP, SEXP tolSEXP, SEXP num_threadsSEXP, SEXP pSEXP, SEXP qSEXP, SEXP theta1SEXP, SEXP sigma1SEXP, SEXP theta1_0SEXP, SEXP sigma1_0SEXP, SEXP nu_0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix >::type bg_mean(bg_meanSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix >::type bg_sd(bg_sdSEXP);
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type num_threads(num_threadsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type p(pSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type q(qSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type theta1(theta1SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type sigma1(sigma1SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type theta1_0(theta1_0SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type sigma1_0(sigma1_0SEXP);
+    Rcpp::traits::input_parameter< double >::type nu_0(nu_0SEXP);
+    rcpp_result_gen = Rcpp::wrap(run_em(mat, bg_mean, bg_sd, K, max_iter, tol, num_threads, p, q, theta1, sigma1, theta1_0, sigma1_0, nu_0));
+    return rcpp_result_gen;
+END_RCPP
+}

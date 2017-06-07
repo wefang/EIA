@@ -12,4 +12,3 @@ consolidateModels(isot, id = 1:length(isot@domain))
 \description{
 Copy results from the model file to the main object.
 }
-

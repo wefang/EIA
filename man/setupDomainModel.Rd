@@ -9,4 +9,3 @@ setupDomainModel(isot, data.types = isot@data.types)
 \description{
 Setup the domain models
 }
-

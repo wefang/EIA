@@ -14,4 +14,3 @@ generateMatrices(epidt)
 Generate count matrices for each chromosome, each matrix is saved as a separate .rds files in the data directory.
 Requires that bin counts be summarized from the alignment files by running \code{\link{convert2bin}}.
 }
-
