@@ -118,12 +118,16 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
 #pragma omp parallel for shared(theta1_new, mat, post, theta1_0, temp_post_sum)
           for (int j = 0; j < J; j++){
               theta1_new[j] = (sum(post(_, j) * mat(_, j)) + theta1_0[j]) / (temp_post_sum[j]+ 1);
+              // restricted maximizer
+              if (theta1_new[j] < max(bg_mean( _ , j)) + max(bg_sd( _ , j))){
+                  theta1_new[j] = max(bg_mean( _ , j)) + max(bg_sd( _ , j));
+              }
           }
           theta1 = clone(theta1_new);
 
 #pragma omp parallel for shared(post, mat, theta1, nu_0, sigma1_0, temp_post_sum)
           for (int j = 0; j < J; j++){
-              sigma1_new[j] = std::sqrt((sum(post(_, j) * pow(mat(_, j) - theta1[j], 2)) + std::pow(nu_0, 2)*std::pow(sigma1_0[j], 2))  / (temp_post_sum[j] + nu_0 - 1));
+              sigma1_new[j] = std::sqrt((sum(post(_, j) * pow(mat(_, j) - theta1[j], 2)) + std::pow(nu_0, 2)*std::pow(sigma1_0[j], 2))  / (temp_post_sum[j] + nu_0 + 1));
           }
           sigma1 = clone(sigma1_new);
 
