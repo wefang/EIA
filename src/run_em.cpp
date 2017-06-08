@@ -10,7 +10,8 @@ using namespace Rcpp;
 List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericMatrix bg_sd,
             int K, int max_iter, double tol, int num_threads,
             NumericVector p, NumericMatrix q, NumericVector theta1, NumericVector sigma1,
-            const NumericVector eta, const NumericVector gamma, const double nu = 2.0, const double kappa = 1.0){
+            const NumericVector eta, const NumericVector gamma,
+	    const double lambda = 2.0, const double nu = 2.0, const double kappa = 1.0){
       
       // set number of threads
       omp_set_num_threads(num_threads);
@@ -20,7 +21,7 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
       bool converge_flag = FALSE;
       double loglike = -1e10, loglike_new;
       double m, d1, d2, temp_max;
-      NumericVector p_new(K), theta1_new(J), sigma1_new(J), temp(K), temp_clust_sum(K), temp_post_sum(J), all_like(I);
+      NumericVector p_new(K), theta1_new(J), sigma1_new(J), temp(K), temp_clust_sum(K), temp_post_sum(J), all_like(I), theta1_lower(J);
       NumericMatrix q_new(K, J), like1(I, J), like0(I, J), clust_like(I, K), post(I, J);
       arma::cube temp_like_sum(K, J, I), cond_like(I, K, J);
 
@@ -30,6 +31,12 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
             for (int j=0; j < J; j++){
                   like0(i, j) = R::dnorm(mat(i, j), bg_mean(i, j), bg_sd(i, j), FALSE);
             }
+      }
+
+	// computer the lower constraint for theta1      
+#pragma omp parallel for shared(theta1_lower, bg_mean, bg_sd)
+      for (int j = 0; j < J; j++){
+	      theta1_lower[j] = mean(bg_mean(_, j)) + lambda * mean(bg_sd(_, j));
       }
 
       for (int iter = 0; iter < max_iter; iter++){
@@ -119,8 +126,8 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
           for (int j = 0; j < J; j++){
               theta1_new[j] = (sum(post(_, j) * mat(_, j)) + kappa*eta[j]) / (temp_post_sum[j]+kappa);
               // restricted maximizer
-              if (theta1_new[j] < max(bg_mean( _ , j)) + max(bg_sd( _ , j))){
-                  theta1_new[j] = max(bg_mean( _ , j)) + max(bg_sd( _ , j));
+              if (theta1_new[j] < theta1_lower[j]){
+                  theta1_new[j] = theta1_lower[j];
               }
           }
           theta1 = clone(theta1_new);
@@ -139,6 +146,9 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
           }
       }
 
+      if (converge_flag == FALSE){
+	      Rcout << "max iterations reached.\n";
+      }
 
       return List::create(
               Named("p") = p,
