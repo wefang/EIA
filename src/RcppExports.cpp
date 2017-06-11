@@ -86,3 +86,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+
+static const R_CallMethodDef CallEntries[] = {
+    {"EIA_SearchMode", (DL_FUNC) &EIA_SearchMode, 10},
+    {"EIA_calLikeIso", (DL_FUNC) &EIA_calLikeIso, 7},
+    {"EIA_calPostProb", (DL_FUNC) &EIA_calPostProb, 7},
+    {"EIA_run_em", (DL_FUNC) &EIA_run_em, 16},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_EIA(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
+}

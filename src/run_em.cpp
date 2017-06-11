@@ -34,7 +34,7 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
     }
 
     // computer the lower constraint for theta1
-#pragma omp parallel for shared(theta1_lower)
+// #pragma omp parallel for shared(theta1_lower)
     for (int j = 0; j < J; j++){
         theta1_lower[j] = mean(bg_mean(_, j)) + lambda * mean(bg_sd(_, j));
     }
@@ -123,15 +123,12 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
             temp_post_sum[j] = sum(post(_, j));
         }
 
-#pragma omp parallel for shared(theta1_new, theta1_lower, post, temp_post_sum)
+// #pragma omp parallel for shared(theta1_new, theta1_lower, post, temp_post_sum)
         for (int j = 0; j < J; j++){
             theta1_new[j] = (sum(post(_, j) * mat(_, j)) + kappa*eta[j]) / (temp_post_sum[j]+kappa);
             // restricted maximizer
-#pragma omp critical
-            {
-                if (theta1_new[j] < theta1_lower[j]){
-                    theta1_new[j] = theta1_lower[j];
-                }
+            if (theta1_new[j] < theta1_lower[j]){
+                theta1_new[j] = theta1_lower[j];
             }
         }
         theta1 = clone(theta1_new);
@@ -144,13 +141,13 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
         }
         sigma1 = clone(sigma1_new);
 
-        if (converge_flag == TRUE){
+        if (converge_flag){
             Rcout << "converged after " << iter << " iterations. " << "\n";
             break;
         }
     }
 
-    if (converge_flag == FALSE){
+    if (!converge_flag){
         Rcout << "max iterations reached.\n";
     }
 
