@@ -13,7 +13,7 @@ calPostProb <- function(mat, p, q, bg_mean, bg_sd, theta1, sigma1) {
     .Call('EIA_calPostProb', PACKAGE = 'EIA', mat, p, q, bg_mean, bg_sd, theta1, sigma1)
 }
 
-run_em <- function(mat, bg_mean, bg_sd, K, max_iter, tol, num_threads, p, q, theta1, sigma1, eta, gamma, lambda = 2.0, nu = 2.0, kappa = 1.0) {
-    .Call('EIA_run_em', PACKAGE = 'EIA', mat, bg_mean, bg_sd, K, max_iter, tol, num_threads, p, q, theta1, sigma1, eta, gamma, lambda, nu, kappa)
+run_em <- function(mat, bg_mean, bg_sd, K, max_iter, tol, num_threads, p, q, theta1, sigma1, eta, gamma, lambda = 2.0, nu = 2.0, kappa = 1.0, verbose = FALSE) {
+    .Call('EIA_run_em', PACKAGE = 'EIA', mat, bg_mean, bg_sd, K, max_iter, tol, num_threads, p, q, theta1, sigma1, eta, gamma, lambda, nu, kappa, verbose)
 }
 

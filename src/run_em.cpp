@@ -11,14 +11,15 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
         int K, int max_iter, double tol, int num_threads,
         NumericVector p, NumericMatrix q, NumericVector theta1, NumericVector sigma1,
         const NumericVector eta, const NumericVector gamma,
-        const double lambda = 2.0, const double nu = 2.0, const double kappa = 1.0){
+        const double lambda = 2.0, const double nu = 2.0, const double kappa = 1.0,
+        bool verbose = false){
 
     // set number of threads
     omp_set_num_threads(num_threads);
 
     const int I = mat.nrow(), J = mat.ncol();
 
-    bool converge_flag = FALSE;
+    bool converge_flag = false;
     double loglike = -1e10, loglike_new;
     double d1, d2, temp_max;
     NumericVector p_new(K), theta1_new(J), sigma1_new(J), temp(K), temp_clust_sum(K), temp_post_sum(J), all_like(I), theta1_lower(J);
@@ -104,7 +105,7 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
             }
         }
 
-        if ( max( abs(p_new - p) / p ) < tol & max( abs(q_new - q) / q) < tol ) {
+        if (max(abs(p_new - p) / p) < tol & max(abs(q_new - q) / q) < tol) {
             converge_flag = TRUE;
         }
 
@@ -145,10 +146,14 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
             Rcout << "converged after " << iter << " iterations. " << "\n";
             break;
         }
+
+        if (verbose){
+            Rcout << "current loglikelihood: " << loglike << "\n";
+        }
     }
 
     if (!converge_flag){
-        Rcout << "max iterations reached.\n";
+        Rcout << "max iterations: " << max_iter-1 << " reached.\n";
     }
 
     return List::create(
@@ -158,7 +163,8 @@ List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericM
             Named("sigma1") = sigma1,
             Named("loglike") = loglike,
             Named("clust.like") = clust_like,
-            Named("cond.like") = cond_like
+            Named("cond.like") = cond_like,
+            Named("converged") = converge_flag
             );
 
 }

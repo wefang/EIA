@@ -61,8 +61,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // run_em
-List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericMatrix bg_sd, int K, int max_iter, double tol, int num_threads, NumericVector p, NumericMatrix q, NumericVector theta1, NumericVector sigma1, const NumericVector eta, const NumericVector gamma, const double lambda, const double nu, const double kappa);
-RcppExport SEXP EIA_run_em(SEXP matSEXP, SEXP bg_meanSEXP, SEXP bg_sdSEXP, SEXP KSEXP, SEXP max_iterSEXP, SEXP tolSEXP, SEXP num_threadsSEXP, SEXP pSEXP, SEXP qSEXP, SEXP theta1SEXP, SEXP sigma1SEXP, SEXP etaSEXP, SEXP gammaSEXP, SEXP lambdaSEXP, SEXP nuSEXP, SEXP kappaSEXP) {
+List run_em(const NumericMatrix mat, const NumericMatrix bg_mean, const NumericMatrix bg_sd, int K, int max_iter, double tol, int num_threads, NumericVector p, NumericMatrix q, NumericVector theta1, NumericVector sigma1, const NumericVector eta, const NumericVector gamma, const double lambda, const double nu, const double kappa, bool verbose);
+RcppExport SEXP EIA_run_em(SEXP matSEXP, SEXP bg_meanSEXP, SEXP bg_sdSEXP, SEXP KSEXP, SEXP max_iterSEXP, SEXP tolSEXP, SEXP num_threadsSEXP, SEXP pSEXP, SEXP qSEXP, SEXP theta1SEXP, SEXP sigma1SEXP, SEXP etaSEXP, SEXP gammaSEXP, SEXP lambdaSEXP, SEXP nuSEXP, SEXP kappaSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -82,7 +82,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< const double >::type nu(nuSEXP);
     Rcpp::traits::input_parameter< const double >::type kappa(kappaSEXP);
-    rcpp_result_gen = Rcpp::wrap(run_em(mat, bg_mean, bg_sd, K, max_iter, tol, num_threads, p, q, theta1, sigma1, eta, gamma, lambda, nu, kappa));
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(run_em(mat, bg_mean, bg_sd, K, max_iter, tol, num_threads, p, q, theta1, sigma1, eta, gamma, lambda, nu, kappa, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -91,7 +92,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"EIA_SearchMode", (DL_FUNC) &EIA_SearchMode, 10},
     {"EIA_calLikeIso", (DL_FUNC) &EIA_calLikeIso, 7},
     {"EIA_calPostProb", (DL_FUNC) &EIA_calPostProb, 7},
-    {"EIA_run_em", (DL_FUNC) &EIA_run_em, 16},
+    {"EIA_run_em", (DL_FUNC) &EIA_run_em, 17},
     {NULL, NULL, 0}
 };
 
