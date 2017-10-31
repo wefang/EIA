@@ -186,12 +186,16 @@ generateMatrices <- function(epidt){
             message(paste("starting chromosome", chr, " of ", epidt@chr.count, "."))
             trt.counts.mat <- matrix(, nrow(tab), bin.counts[chr])
             for (i in 1:nrow(tab)){
-                  bin.file <- tab[i, ]$trt.file
-                  con <- file(bin.file, open = "rb")
-                  # read only counts for current chromosome, 4 bytes integers
-                  seek(con, where = 4 * bin.from[chr])
-                  trt.counts.mat[i, ] <- readBin(con, integer(), bin.counts[chr])
-                  close(con)
+                if (epidt@file.type == "bin") {
+                    bin.file <- tab[i, ]$trt.file
+                } else {
+                  bin.file <- tab[i, ]$trt.bin
+                }
+                con <- file(bin.file, open = "rb")
+                # read only counts for current chromosome, 4 bytes integers
+                seek(con, where = 4 * bin.from[chr])
+                trt.counts.mat[i, ] <- readBin(con, integer(), bin.counts[chr])
+                close(con)
             }
             
             message("log2 transforming counts..")
