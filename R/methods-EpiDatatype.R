@@ -183,7 +183,7 @@ generateMatrices <- function(epidt){
       load.chrlen(epidt@chrlen.file, epidt@bin.width)
       
       for (chr in 1:epidt@chr.count){
-            message(paste("starting chromosome", chr, " of ", epidt$chr.count, "."))
+            message(paste("starting chromosome", chr, " of ", epidt@chr.count, "."))
             trt.counts.mat <- matrix(, nrow(tab), bin.counts[chr])
             for (i in 1:nrow(tab)){
                   bin.file <- tab[i, ]$trt.file

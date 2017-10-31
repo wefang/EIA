@@ -192,6 +192,7 @@ predictSignal <- function(isot, id, bin.files, peaks, data.type = isot@data.type
 
     output <- list()
     for (domain.id in id){
+        message(domain.id)
         dmod <- isot@domain.list[[domain.id]]
         if (is.null(dmod@q)){
             warning(paste("no model output for domain", domain.id))
@@ -209,7 +210,7 @@ predictSignal <- function(isot, id, bin.files, peaks, data.type = isot@data.type
         if (neutral.prior) {
             q <- matrix(rep(0.5, length(bins)), 1)
         } else {
-            q.sel <- sort(unique(apply(dmod@clust.like, 1, which.max)))
+            q.sel <- sort(dmod@labels) 
             q <- dmod@q[q.sel, (bins.from.d[[dt.id]] + 1):bins.from.d[[dt.id+1]]]
         }
         bins.gw <- chr2gw(rep(chr.num, length(bins)), bins)
